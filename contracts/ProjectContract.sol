@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-
 import "./Taskcontract.sol";
-
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -12,27 +10,21 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 contract ProjectContract is Ownable, ReentrancyGuard, Initializable {
-
-
     mapping(string => address) tasks;
 
-
     bool public isInitialized;
-    
+
     string public _name;
     address _ecosystemToken;
     uint _prioritizerShare;
     uint _contributorShare;
     uint _validatorShare;
 
-   
     event AddAdmin(address adminAddress);
     event RemoveAdmin(address adminAddress);
-    
+
     event AddTask(uint taskId);
     event RemoveTask(uint taskId);
-
-
 
     function initialize(
         string memory name,
@@ -50,21 +42,15 @@ contract ProjectContract is Ownable, ReentrancyGuard, Initializable {
         _validatorShare = validatorShare;
     }
 
-     function addTask() external nonReentrant {
-       
-    }
+    function addTask() external nonReentrant {}
 
-     function removeTask() external nonReentrant {
-       
-    }
+    function removeTask() external nonReentrant {}
 
-  
- function deployTaskClone(
+    function deployTaskClone(
         address _implementationContract,
         string memory _name,
         string memory _taskSlug
     ) external returns (address) {
-
         require(
             proxies[_taskSlug] == 0x0000000000000000000000000000000000000000,
             "Task exists already with the same name, use different identifier"
@@ -99,7 +85,6 @@ contract ProjectContract is Ownable, ReentrancyGuard, Initializable {
                 clone,
                 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000
             )
-
 
             /*
               |              20 bytes                |
@@ -147,15 +132,14 @@ contract ProjectContract is Ownable, ReentrancyGuard, Initializable {
         return proxy;
     }
 
-
-    
     function getTasks(string memory _taskSlug) public view returns (address) {
         require(
             tasks[_taskSlug] != 0x0000000000000000000000000000000000000000,
             "No Tasks exists with this name"
         );
 
-
         return tasks[_taskSlug];
     }
+
+    //Need a function that returns the tasks that which tasks are finished and which taskes are still not done.
 }
