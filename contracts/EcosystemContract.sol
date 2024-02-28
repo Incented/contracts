@@ -16,6 +16,7 @@ contract EcosystemContract is Ownable, ReentrancyGuard, Initializable {
     mapping(string => address) adminList;
 
 
+
     bool public isInitialized;
     string public _name;
 
@@ -28,6 +29,7 @@ contract EcosystemContract is Ownable, ReentrancyGuard, Initializable {
     event AddAdmin(address adminAddress);
     event RemoveAdmin(address adminAddress);
     event AddProject(string projectName, address projectAddress);
+
 
    
 
@@ -42,7 +44,9 @@ contract EcosystemContract is Ownable, ReentrancyGuard, Initializable {
         _ecosystemToken = ecosystemToken;
     }
 
+
      function addAdmin() onlyOwner {
+
         uint256 tokenId = totalSupply() + 1;
         // console.logBytes(_proof[0]);
 
@@ -52,8 +56,11 @@ contract EcosystemContract is Ownable, ReentrancyGuard, Initializable {
 
         mintedTillNow++;
     }
+
+
 
      function removeAdmin() external nonReentrant {
+
         uint256 tokenId = totalSupply() + 1;
         // console.logBytes(_proof[0]);
 
@@ -63,16 +70,16 @@ contract EcosystemContract is Ownable, ReentrancyGuard, Initializable {
 
         mintedTillNow++;
     }
-
-   
 
     function deployProjectClone(
         address _implementationContract,
         string memory _name,
         string memory _projectSlug,
+
         uint _prioritizerShare,
         uint _contributorShare,
         uint _validatorShare
+
     ) external returns (address) {
         require(
             proxies[_communitySlug] == 0x0000000000000000000000000000000000000000,
@@ -80,9 +87,11 @@ contract EcosystemContract is Ownable, ReentrancyGuard, Initializable {
         );
 
         // convert the address to 20 bytes
+
         bytes20 implementationContractInBytes = bytes20(
             _implementationContract
         );
+
         //address to assign a cloned proxy
         address proxy;
 
@@ -101,10 +110,12 @@ contract EcosystemContract is Ownable, ReentrancyGuard, Initializable {
             */
             let clone := mload(0x40)
             // store 32 bytes to memory starting at "clone"
+
             mstore(
                 clone,
                 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000
             )
+
 
             /*
               |              20 bytes                |
@@ -124,10 +135,12 @@ contract EcosystemContract is Ownable, ReentrancyGuard, Initializable {
             */
             // store 32 bytes to memory starting at "clone" + 40 bytes
             // 0x28 = 40
+
             mstore(
                 add(clone, 0x28),
                 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000
             )
+
 
             /*
             |                 20 bytes                  |          20 bytes          |           15 bytes          |
@@ -151,14 +164,18 @@ contract EcosystemContract is Ownable, ReentrancyGuard, Initializable {
         return proxy;
     }
 
+
     
     function getProjects(string memory _projectSlug) public view returns (address) {
         require(
             projects[_projectSlug] != 0x0000000000000000000000000000000000000000,
             "No Project exists with this name"
+
         );
 
         return projects[_projectSlug];
     }
+
     
+
 }

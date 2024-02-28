@@ -8,111 +8,187 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Functionality still needed to be implemented:
 // - Time locking for voting periods.
 // - Validation staking
-// - Adding what the quorum 
-// - 
+// - Adding what the quorum
+// - settlement of funds at the end
+// - slashing of staking for the negative outcome
+
 contract TaskContract {
+    bool public initialized;
+
     struct Task {
+        address project;
         address creator;
-        uint256 cost;
-        uint256 prioritize;
-        uint256 deprioritize;
-        uint256 highestBid;
-        address highestBidder;
-        bool isClaimed;
-        bool isCompleted;
+        uint256 reward;
+        mapping(address prioritizeStaker => mapping(bool prioritize => uint256 amount)) prioritizationStake;
+        mapping(address validationStaker => mapping(bool validate => uint256 amount)) validationStake;
+        TaskStatus status;
+        IERC20 token;
     }
 
-    IERC20 public token;
-    // move to project contract
-    mapping(uint256 => Task) public tasks;
-    uint256 public nextTaskId;
-
-    event TaskCreated(uint256 indexed taskId, address indexed creator, uint256 cost);
-    event TaskPrioritized(uint256 indexed taskId, address indexed staker, uint256 amount, uint256 newPrioritize);
-    event TaskDeprioritized(uint256 indexed taskId, address indexed staker, uint256 amount, uint256 newDeprioritize);
-    event TaskBid(uint256 indexed taskId, address indexed bidder, uint256 bidAmount, uint256 highestBid);
-    event TaskClaimed(uint256 indexed taskId, address indexed claimer);
-    event TaskCompleted(uint256 indexed taskId, address indexed validator, address completer, bool status);
-    // need to add the other stuff 
-    constructor(address _tokenAddress, time, quorm, IERC20 ) {
-        token = IERC20(_tokenAddress);
+    enum TaskStatus {
+        Created,
+        PriotizationInProgress,
+        ContributionInProgress,
+        ValidationInProgress,
+        ValidationEnded,
+        Settled
     }
-    // This probably should be tracked in the Project contract
-    function createTask(uint256 cost) external {
-        tasks[++nextTaskId] = Task(msg.sender, cost, 0, 0, 0, address(0), false, false);
-        emit TaskCreated(nextTaskId, msg.sender, cost);
+   
+    struct ValidationPhase {
+        uint256 startTime;
+        uint256 endTime;
+        mapping(address staker => uint256 ammount) forStakes;
+        mapping(address staker => uint256 ammount) againstStakes;
+        address[] stakersForKeys;
+        address[] stakersAgainstKeys;
+        uint256 totalForStakes;
+        uint256 totalAgainstStakes;
+        bool votingEnded;
+        bool forWon;
+        uint256 winnerTotalStake;
+        uint256 loserTotalStake;
+        uint256 poolPrize;
+        bool losersStakeUpdated;
+        address contributor;
     }
-    // need to track balances of the stakers in a mapping 
-    function stakeForPriority(uint256 taskId, uint256 amount, bool prioritize) external {
-        require(tasks[taskId].creator != address(0), "Task does not exist");
-        token.transferFrom(msg.sender, address(this), amount);
 
-        if (prioritize) {
-            tasks[taskId].prioritize += amount;
-            emit TaskPrioritized(taskId, msg.sender, amount, tasks[taskId].prioritize);
+    modifier isInitialized() {
+        require(!initialized, "Contract is already initialized");
+        _;
+    }
+
+    // this function needs to get protected so that it can only be called once.. will do soon.
+    function initialize(address _project, uint256 _reward, address _creator, address _tokenAddress)
+        external
+        isInitialized
+    {
+        Task storage task = Task(_project, _creator, _reward, 0, 0, TaskStatus.Created, IERC20(_tokenAddress));
+    }
+
+    function submitContribution() external {}
+
+
+    // Staking for validation
+    function stakeForValidation(uint256 taskId, uint256 amount, bool validate) external {
+       require(block.timestamp >= ValidationPhase.startTime && block.timestamp <= ValidationPhase.endTime, "Voting period inactive");
+       require(amount > 0, "Amount must be greater than 0");
+       require(Task.token.transferFrom(msg.sender, address(this), amount), "Transfer failed");
+
+        if(validate){
+            ValidationPhase.forStakes[msg.sender] += amount;
+            ValidationPhase.totalForStakes += amount;
+            ValidationPhase.stakersForKeys.push(msg.sender);
         } else {
-            tasks[taskId].deprioritize += amount;
-            emit TaskDeprioritized(taskId, msg.sender, amount, tasks[taskId].deprioritize);
+            ValidationPhase.againstStakes[msg.sender] += amount;
+            ValidationPhase.totalAgainstStakes += amount;
+            ValidationPhase.stakersAgainstKeys.push(msg.sender);
         }
     }
-
-    // function bidForTask(uint256 taskId, uint256 amount) external {
-    //     Task storage task = tasks[taskId];
-    //     require(task.creator != address(0), "Task does not exist");
-    //     require(!task.isClaimed, "Task already claimed");
-    //     require(amount > task.highestBid, "Bid too low"); // might change this
-    //     // this needs some more thought about how to handle the bidding
-    //     if (task.highestBidder != address(0)) {
-    //         token.transfer(task.highestBidder, task.highestBid);
-    //     }
-    //     task.highestBid = amount;
-    //     task.highestBidder = msg.sender;
-    //     token.transferFrom(msg.sender, address(this), amount);
-    //     emit TaskBid(taskId, msg.sender, amount, task.highestBid);
-    // }
+   
+    function calculateWinners() public {
+        require(block.timestamp > ValidationPhase.endTime, "Validation period still active");
     
-    // function claimTask(uint256 taskId) external {
-    //     Task storage task = tasks[taskId];
-    //     require(msg.sender == task.highestBidder, "Not highest bidder");
-    //     require(!task.isClaimed, "Task already claimed");
-
-    //     task.isClaimed = true;
-
-    //     emit TaskClaimed(taskId, msg.sender);
-    // }
-
-    // this is a simple way to validate tasks, maybe consider using EIP-712 to sign
-    function validateTask(uint256 taskId, bool completed) external {
-        Task storage task = tasks[taskId];
-        require(task.creator != address(0), "Task does not exist");
-        require(task.isClaimed, "Task not claimed");
-
-        if (completed) {
-            task.isCompleted = true;
-            // Transfer task cost and bid amount to the task completer
-            token.transfer(task.highestBidder, task.cost + task.highestBid);
-            emit TaskCompleted(taskId, msg.sender, task.highestBidder, true);
+        if (ValidationPhase.totalFor > ValidationPhase.totalAgainst) {
+            ValidationPhase.winnerTotalStake = ValidationPhase.totalFor;
+            ValidationPhase.loserTotalStake = ValidationPhase.totalAgainst;
+            ValidationPhase.forWon = true;
         } else {
-            // Don't know what to do if the contributor finished the tasks but it doesn't meet the requirements or gets validated.
+            ValidationPhase.winnerTotalStake = ValidationPhase.totalAgainst;
+            ValidationPhase.loserTotalStake = ValidationPhase.totalFor;
+            ValidationPhase.forWon = false;
         }
     }
-    function settle
+
+    //Helper fuction to distribute the rewards. This should be called 
+    function distributeRewards() public {
+        require(ValidationPhase.votingEnded, "Voting has not ended yet");
+        require(ValidationPhase.winnerTotalStake > 0, "Winners must be determined");
+
+        uint256 loserFee = ValidationPhase.loserTotalStake * 5 / 100; // Calculate 5% of the losing side's stake
+
+        if (ValidationPhase.forWon) {
+            for (uint256 i = 0; i < ValidationPhase.stakersForKeys.length; i++) { 
+                address staker = ValidationPhase.stakersForKeys[i];
+                uint256 stake = ValidationPhase.forStakes[staker];
+                require(Task.token.transfer(staker, reward), "Reward transfer failed");
+            }
+        } else {
+            for (uint256 i = 0; i < ValidationPhase.stakersAgainstKeys.length; i++) { 
+                uint256 reward = (stake * loserFee) / Valid.winnerTotalStake;
+                require(Task.token.transfer(staker, reward), "Reward transfer failed");
+            }
+        }
+        require(Task.token.transfer(Task.contributor, Task.reward), "Reward transfer failed");
+    }
+
+    function updateLosersStake() external {
+        require(ValidationPhase.votingEnded, "Voting has not ended yet");
+        require(ValidationPhase.winnerTotalStake > 0, "Winners must be determined");
+
+        uint256 loserFee = ValidationPhase.loserTotalStake * 5 / 100; // Calculate 5% of the losing side's stake
+        if(ValidationPhase.forWon){
+            for(uint256 i = 0; i < ValidationPhase.stakersAgainstKeys.length; i++){
+                address staker = ValidationPhase.stakersAgainstKeys[i];
+                uint256 stake = ValidationPhase.againstStakes[staker];
+                uint256 lostStake = stake - (stake * loserFee);
+                ValidationPhase.againstStakes[staker] = stake - lostStake;
+                ValidationPhase.poolPrize += lostStake;
+            }
+        }
+        else{
+            for(uint256 i = 0; i < ValidationPhase.stakersForKeys.length; i++){
+                address staker = ValidationPhase.stakersForKeys[i];
+                uint256 stake = ValidationPhase.forStakes[staker];
+                uint256 lostStake = stake - (stake * loserFee);
+                ValidationPhase.forStakes[staker] = stake - lostStake;
+                ValidationPhase.poolPrize += lostStake;    
+        }
+        ValidationPhase.losersStakeUpdated = true;
+    }
+
+    function unstakeAndClaim() external {
+        require(TaskStats.ValidationEnded, "Validation is not over");
+
+
+
+    }
+
+    // this needs logic to settle the funds. There are two outcomes. the contribuitor gets the funds or the task is not completed
+    // and the funds get sent back to the project.
+    function settle() external {
+        
+    }
 }
+}
+
+
 
 ///////// TASK WORKFLOW /////////
 
 // Phase 1: Task Creation
 //      Initialization: The contract must allow for task creation by specifying the task details, cost in ERC-20 tokens, and the task creator. This phase includes storing the task information and the associated cost.
-//      Hash it on chain 
+//      Hash it on chain
 // Phase 2: Prioritization
 //      Stake for Prioritization: Enable stakeholders to stake ERC-20 tokens to prioritize or deprioritize tasks. This will require updating the task's priority based on the net staking (prioritization stakes minus deprioritization stakes).
 // Phase 3: Contribution
-// 
+//
 // Phase 4: Validation
 //      Task Validation: Implement a mechanism for stakeholders to validate the completion of tasks. Successful completion transfers the staked amount to the task completer, including the initial proposal cost.
+// Phase 5: Settlement
+//      Settlement: The contract must allow for the settlement of funds based on the task's completion status. This phase includes transferring the funds to the task completer or returning the funds to the project if the task is not completed.
 
-// Functionality that still needed to be implemented:
-// - Time locking for voting periods.
+
+
+// Started working on this but thought should just get the validation done and then come back to this since they are the same logic.
+// struct PrioritizationPhase {
+//     uint256 startTime;
+//     uint256 endTime;
+//     mapping(address staker => uint256 ammount) forStakes;
+//     mapping(address staker => uint256 ammount) againstStakes;
+//     uint256 totalForStakes;
+//     uint256 totalAgainstStakes;
+//     bool votingEnded;
+// }
 
 // Layout of Contract:
 // version

@@ -20,9 +20,11 @@ contract MPFEcosystem {
         );
 
         // convert the address to 20 bytes
+
         bytes20 implementationContractInBytes = bytes20(
             _implementationContract
         );
+
         //address to assign a cloned proxy
         address proxy;
 
@@ -41,10 +43,12 @@ contract MPFEcosystem {
             */
             let clone := mload(0x40)
             // store 32 bytes to memory starting at "clone"
+
             mstore(
                 clone,
                 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000
             )
+
 
             /*
               |              20 bytes                |
@@ -64,10 +68,12 @@ contract MPFEcosystem {
             */
             // store 32 bytes to memory starting at "clone" + 40 bytes
             // 0x28 = 40
+
             mstore(
                 add(clone, 0x28),
                 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000
             )
+
 
             /*
             |                 20 bytes                  |          20 bytes          |           15 bytes          |
@@ -93,6 +99,7 @@ contract MPFEcosystem {
 
     function getProxies(string memory _ecosystemSlug) public view returns (address) {
         require(
+
             proxies[_ecosystemSlug] != 0x0000000000000000000000000000000000000000,
             "No community exists with this name"
         );

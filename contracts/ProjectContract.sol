@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
+
 import "./Taskcontract.sol";
+
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -10,6 +12,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 contract ProjectContract is Ownable, ReentrancyGuard, Initializable {
+
 
     mapping(string => address) tasks;
 
@@ -61,15 +64,18 @@ contract ProjectContract is Ownable, ReentrancyGuard, Initializable {
         string memory _name,
         string memory _taskSlug
     ) external returns (address) {
+
         require(
             proxies[_taskSlug] == 0x0000000000000000000000000000000000000000,
             "Task exists already with the same name, use different identifier"
         );
 
         // convert the address to 20 bytes
+
         bytes20 implementationContractInBytes = bytes20(
             _implementationContract
         );
+
         //address to assign a cloned proxy
         address proxy;
 
@@ -88,10 +94,12 @@ contract ProjectContract is Ownable, ReentrancyGuard, Initializable {
             */
             let clone := mload(0x40)
             // store 32 bytes to memory starting at "clone"
+
             mstore(
                 clone,
                 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000
             )
+
 
             /*
               |              20 bytes                |
@@ -111,6 +119,7 @@ contract ProjectContract is Ownable, ReentrancyGuard, Initializable {
             */
             // store 32 bytes to memory starting at "clone" + 40 bytes
             // 0x28 = 40
+
             mstore(
                 add(clone, 0x28),
                 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000
@@ -138,12 +147,14 @@ contract ProjectContract is Ownable, ReentrancyGuard, Initializable {
         return proxy;
     }
 
+
     
     function getTasks(string memory _taskSlug) public view returns (address) {
         require(
             tasks[_taskSlug] != 0x0000000000000000000000000000000000000000,
             "No Tasks exists with this name"
         );
+
 
         return tasks[_taskSlug];
     }
