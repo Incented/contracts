@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // - Adding what the quorum
 // - settlement of funds at the end
 // - slashing of staking for the negative outcome
+// -
 
 contract TaskContract {
     bool public initialized;
@@ -99,27 +100,7 @@ contract TaskContract {
         }
     }
 
-    //Helper fuction to distribute the rewards. This should be called 
-    function distributeRewards() public {
-        require(ValidationPhase.votingEnded, "Voting has not ended yet");
-        require(ValidationPhase.winnerTotalStake > 0, "Winners must be determined");
-
-        uint256 loserFee = ValidationPhase.loserTotalStake * 5 / 100; // Calculate 5% of the losing side's stake
-
-        if (ValidationPhase.forWon) {
-            for (uint256 i = 0; i < ValidationPhase.stakersForKeys.length; i++) { 
-                address staker = ValidationPhase.stakersForKeys[i];
-                uint256 stake = ValidationPhase.forStakes[staker];
-                require(Task.token.transfer(staker, reward), "Reward transfer failed");
-            }
-        } else {
-            for (uint256 i = 0; i < ValidationPhase.stakersAgainstKeys.length; i++) { 
-                uint256 reward = (stake * loserFee) / Valid.winnerTotalStake;
-                require(Task.token.transfer(staker, reward), "Reward transfer failed");
-            }
-        }
-        require(Task.token.transfer(Task.contributor, Task.reward), "Reward transfer failed");
-    }
+    
 
     function updateLosersStake() external {
         require(ValidationPhase.votingEnded, "Voting has not ended yet");
@@ -148,8 +129,14 @@ contract TaskContract {
 
     function unstakeAndClaim() external {
         require(TaskStats.ValidationEnded, "Validation is not over");
+        require(ValidationPhase.losersStakeUpdated, "Losers stake not updated");
+        require(ValidationPhase.poolPrize > 0, "Pool prize must be greater than 0");
 
-
+        if(ValidationPhase.forWon){
+            require(ValidationPhase.forStakes[msg.sender] > 0);
+            uint256 reward;
+            reward = ValidationPhase.forStakes[msg.sender]; 
+        }
 
     }
 
@@ -161,7 +148,12 @@ contract TaskContract {
 }
 }
 
-
+/////// TASK MVP WORKFLOW ////
+// 1. Task gets inialized from the Project contract
+// 2. Someone can contribute to the task
+// 3. People Stake to validate the task
+// 4. Caluclate rewards of the tasks the rewards of the task
+// 5. Claim reward/stake
 
 ///////// TASK WORKFLOW /////////
 
@@ -171,7 +163,7 @@ contract TaskContract {
 // Phase 2: Prioritization
 //      Stake for Prioritization: Enable stakeholders to stake ERC-20 tokens to prioritize or deprioritize tasks. This will require updating the task's priority based on the net staking (prioritization stakes minus deprioritization stakes).
 // Phase 3: Contribution
-//
+//          Individuals would contribute to the task and submit their contribution. 
 // Phase 4: Validation
 //      Task Validation: Implement a mechanism for stakeholders to validate the completion of tasks. Successful completion transfers the staked amount to the task completer, including the initial proposal cost.
 // Phase 5: Settlement
@@ -189,6 +181,32 @@ contract TaskContract {
 //     uint256 totalAgainstStakes;
 //     bool votingEnded;
 // }
+
+
+//Helper fuction to distribute the rewards. This should be called 
+    // Decided not to use those because we shouldnt be sending rewards but rather having users claim them.
+    // We can do that in the settlement 
+    // function distributeRewards() public {
+    //     require(ValidationPhase.votingEnded, "Voting has not ended yet");
+    //     require(ValidationPhase.winnerTotalStake > 0, "Winners must be determined");
+
+    //     uint256 loserFee = ValidationPhase.loserTotalStake * 5 / 100; // Calculate 5% of the losing side's stake
+
+    //     if (ValidationPhase.forWon) {
+    //         for (uint256 i = 0; i < ValidationPhase.stakersForKeys.length; i++) { 
+    //             address staker = ValidationPhase.stakersForKeys[i];
+    //             uint256 stake = ValidationPhase.forStakes[staker];
+    //             require(Task.token.transfer(staker, reward), "Reward transfer failed");
+    //         }
+    //     } else {
+    //         for (uint256 i = 0; i < ValidationPhase.stakersAgainstKeys.length; i++) { 
+    //             uint256 reward = (stake * loserFee) / Valid.winnerTotalStake;
+    //             require(Task.token.transfer(staker, reward), "Reward transfer failed");
+    //         }
+    //     }
+    //     require(Task.token.transfer(Task.contributor, Task.reward), "Reward transfer failed");
+    // }
+
 
 // Layout of Contract:
 // version
