@@ -14,6 +14,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract TaskContract {
     bool public initialized;
+    mapping(address staker => uint256 ammount) validationForStakes;
+    mapping(address staker => uint256 ammount) validationAgainstStakes;
 
     struct Task {
         address project;
@@ -22,6 +24,7 @@ contract TaskContract {
         TaskStatus status;
         IERC20 token;
     }
+    Task task;
 
     enum TaskStatus {
         Created,
@@ -35,8 +38,6 @@ contract TaskContract {
     struct ValidationPhase {
         uint256 startTime;
         uint256 endTime;
-        mapping(address staker => uint256 ammount) forStakes;
-        mapping(address staker => uint256 ammount) againstStakes;
         address[] stakersForKeys;
         address[] stakersAgainstKeys;
         uint256 totalForStakes;
@@ -49,6 +50,7 @@ contract TaskContract {
         bool losersStakeUpdated;
         address contributor;
     }
+    ValidationPhase validationPhase;
 
     modifier isInitialized() {
         require(!initialized, "Contract is already initialized");
@@ -60,19 +62,24 @@ contract TaskContract {
         address _project,
         uint256 _reward,
         address _creator,
-        address _tokenAddress
+        address _tokenAddress,
+        uint256 _endTime
     ) external isInitialized {
-        Task memory task = Task(
+        task = Task(
             _project,
             _creator,
             _reward,
             TaskStatus.Created,
             IERC20(_tokenAddress)
         );
+        validationPhase.endTime = _endTime;
+
         initialized = true;
     }
 
-    function submitContribution() external {}
+    function submitContribution() external {
+        validationPhase.contributor = msg.sender;
+    }
 
     // Staking for validation
     function stakeForValidation(
@@ -81,118 +88,127 @@ contract TaskContract {
         bool validate
     ) external {
         require(
-            block.timestamp >= ValidationPhase.startTime &&
-                block.timestamp <= ValidationPhase.endTime,
+            block.timestamp >= validationPhase.endTime,
+            "voting period inactive"
+        );
+        require(
+            block.timestamp <= validationPhase.endTime,
             "Voting period inactive"
         );
         require(amount > 0, "Amount must be greater than 0");
         require(
-            Task.token.transferFrom(msg.sender, address(this), amount),
+            task.token.transferFrom(msg.sender, address(this), amount),
             "Transfer failed"
         );
 
         if (validate) {
-            ValidationPhase.forStakes[msg.sender] += amount;
-            ValidationPhase.totalForStakes += amount;
-            ValidationPhase.stakersForKeys.push(msg.sender);
+            validationForStakes[msg.sender] += amount;
+            validationPhase.totalForStakes += amount;
+            validationPhase.stakersForKeys.push(msg.sender);
         } else {
-            ValidationPhase.againstStakes[msg.sender] += amount;
-            ValidationPhase.totalAgainstStakes += amount;
-            ValidationPhase.stakersAgainstKeys.push(msg.sender);
+            validationAgainstStakes[msg.sender] += amount;
+            validationPhase.totalAgainstStakes += amount;
+            validationPhase.stakersAgainstKeys.push(msg.sender);
         }
     }
 
     function calculateWinners() public {
         require(
-            block.timestamp > ValidationPhase.endTime,
+            block.timestamp > validationPhase.endTime,
             "Validation period still active"
         );
 
-        if (ValidationPhase.totalFor > ValidationPhase.totalAgainst) {
-            ValidationPhase.winnerTotalStake = ValidationPhase.totalFor;
-            ValidationPhase.loserTotalStake = ValidationPhase.totalAgainst;
-            ValidationPhase.forWon = true;
+        if (
+            validationPhase.totalForStakes > validationPhase.totalAgainstStakes
+        ) {
+            validationPhase.winnerTotalStake = validationPhase.totalForStakes;
+            validationPhase.loserTotalStake = validationPhase
+                .totalAgainstStakes;
+            validationPhase.forWon = true;
         } else {
-            ValidationPhase.winnerTotalStake = ValidationPhase.totalAgainst;
-            ValidationPhase.loserTotalStake = ValidationPhase.totalFor;
-            ValidationPhase.forWon = false;
+            validationPhase.winnerTotalStake = validationPhase
+                .totalAgainstStakes;
+            validationPhase.loserTotalStake = validationPhase.totalForStakes;
+            validationPhase.forWon = false;
         }
     }
 
     function updateLosersStake() external {
-        require(ValidationPhase.votingEnded, "Voting has not ended yet");
+        require(validationPhase.votingEnded, "Voting has not ended yet");
         require(
-            ValidationPhase.winnerTotalStake > 0,
+            validationPhase.winnerTotalStake > 0,
             "Winners must be determined"
         );
 
-        uint256 loserFee = (ValidationPhase.loserTotalStake * 5) / 100; // Calculate 5% of the losing side's stake
-        if (ValidationPhase.forWon) {
+        uint256 loserFee = (validationPhase.loserTotalStake * 5) / 100; // Calculate 5% of the losing side's stake
+        if (validationPhase.forWon) {
             for (
                 uint256 i = 0;
-                i < ValidationPhase.stakersAgainstKeys.length;
+                i < validationPhase.stakersAgainstKeys.length;
                 ++i
             ) {
-                address staker = ValidationPhase.stakersAgainstKeys[i];
-                uint256 stake = ValidationPhase.againstStakes[staker];
+                address staker = validationPhase.stakersAgainstKeys[i];
+                uint256 stake = validationAgainstStakes[staker];
                 uint256 lostStake = stake - (stake * loserFee);
-                ValidationPhase.againstStakes[staker] = stake - lostStake;
-                ValidationPhase.poolPrize += lostStake;
+                validationAgainstStakes[staker] = stake - lostStake;
+                validationPhase.poolPrize += lostStake;
             }
         } else {
             for (
                 uint256 i = 0;
-                i < ValidationPhase.stakersForKeys.length;
+                i < validationPhase.stakersForKeys.length;
                 ++i
             ) {
-                address staker = ValidationPhase.stakersForKeys[i];
-                uint256 stake = ValidationPhase.forStakes[staker];
+                address staker = validationPhase.stakersForKeys[i];
+                uint256 stake = validationForStakes[staker];
                 uint256 lostStake = stake - (stake * loserFee);
-                ValidationPhase.forStakes[staker] = stake - lostStake;
-                ValidationPhase.poolPrize += lostStake;
+                validationForStakes[staker] = stake - lostStake;
+                validationPhase.poolPrize += lostStake;
             }
-            ValidationPhase.losersStakeUpdated = true;
+            validationPhase.losersStakeUpdated = true;
         }
     }
 
     // In this function we will also caluclate the pool prize and how it is split amongst the winners.
     function unstakeAndClaim() external {
-        require(TaskStatus.ValidationEnded, "Validation is not over");
-        require(ValidationPhase.losersStakeUpdated, "Losers stake not updated");
         require(
-            ValidationPhase.poolPrize > 0,
+            task.status != TaskStatus.ValidationEnded,
+            "Validation is not over"
+        );
+        require(validationPhase.losersStakeUpdated, "Losers stake not updated");
+        require(
+            validationPhase.poolPrize > 0,
             "Pool prize must be greater than 0"
         );
 
-        if (ValidationPhase.forWon) {
-            require(ValidationPhase.forStakes[msg.sender] > 0);
+        if (validationPhase.forWon) {
+            require(validationForStakes[msg.sender] > 0);
             uint256 reward;
 
-            uint256 ratioOfPrizepool = ValidationPhase.forStakes[msg.sender] /
-                ValidationPhase.winnerTotalStake;
-            reward = ratioOfPrizepool * ValidationPhase.poolPrize;
+            uint256 ratioOfPrizepool = validationForStakes[msg.sender] /
+                validationPhase.winnerTotalStake;
+            reward = ratioOfPrizepool * validationPhase.poolPrize;
 
-            reward += ValidationPhase.forStakes[msg.sender];
-            ValidationPhase.forStakes[msg.sender] = 0;
+            reward += validationForStakes[msg.sender];
+            validationForStakes[msg.sender] = 0;
 
             require(
-                Task.token.transfer(msg.sender, reward),
+                task.token.transfer(msg.sender, reward),
                 "Reward transfer failed"
             );
         } else {
-            require(ValidationPhase.againstStakes[msg.sender] > 0);
+            require(validationAgainstStakes[msg.sender] > 0);
             uint256 reward;
 
-            uint256 ratioOfPrizepool = ValidationPhase.againstStakes[
-                msg.sender
-            ] / ValidationPhase.winnerTotalStake;
-            reward = ratioOfPrizepool * ValidationPhase.poolPrize;
+            uint256 ratioOfPrizepool = validationAgainstStakes[msg.sender] /
+                validationPhase.winnerTotalStake;
+            reward = ratioOfPrizepool * validationPhase.poolPrize;
 
-            reward += ValidationPhase.againstStakes[msg.sender];
-            ValidationPhase.againstStakes[msg.sender] = 0;
+            reward += validationAgainstStakes[msg.sender];
+            validationAgainstStakes[msg.sender] = 0;
 
             require(
-                Task.token.transfer(msg.sender, reward),
+                task.token.transfer(msg.sender, reward),
                 "Reward transfer failed"
             );
         }
@@ -201,15 +217,18 @@ contract TaskContract {
     // this needs logic to settle the funds. There are two outcomes. the contribuitor gets the funds or the task is not completed
     // and the funds get sent back to the project.
     function settle() external {
-        require(TaskStatus.ValidationEnded, "Validation is not over");
-        if (ValidationPhase.forWon) {
+        require(
+            task.status == TaskStatus.ValidationEnded,
+            "Validation is not over"
+        );
+        if (validationPhase.forWon) {
             require(
-                Task.token.transfer(ValidationPhase.contributor, Task.reward),
+                task.token.transfer(validationPhase.contributor, task.reward),
                 "Reward transfer failed"
             );
         } else {
             require(
-                Task.token.transfer(Task.project, Task.reward),
+                task.token.transfer(task.project, task.reward),
                 "Reward transfer failed"
             );
         }
