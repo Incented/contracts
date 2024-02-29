@@ -33,6 +33,7 @@ contract ProjectContract {
 
     function createTask(
         address _project,
+        string memory _taskName,
         uint256 _reward,
         address _creator,
         address _tokenAddress,
@@ -41,6 +42,7 @@ contract ProjectContract {
         address clone = Clones.clone(implementationContract);
         TaskContract(clone).initialize(
             _project,
+            _taskName,
             _reward,
             _creator,
             _tokenAddress,

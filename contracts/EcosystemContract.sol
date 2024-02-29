@@ -9,13 +9,15 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-contract EcosystemContract is Ownable, ReentrancyGuard, Initializable {
+contract EcosystemContract is Initializable {
     mapping(string => address) projects;
 
-    mapping(string => address) adminList;
+    mapping(address => uint256) adminList;
 
     bool public isInitialized;
     string public _name;
+    address _ecosystemToken;
+
 
     modifier onlyAdmin() {
         require(adminList[msg.sender] == 1);
@@ -36,38 +38,24 @@ contract EcosystemContract is Ownable, ReentrancyGuard, Initializable {
         _ecosystemToken = ecosystemToken;
     }
 
-    function addAdmin() onlyOwner {
-        uint256 tokenId = totalSupply() + 1;
-        // console.logBytes(_proof[0]);
-
-        _safeMint(msg.sender, tokenId);
-
-        emit Mint(tokenId, msg.sender);
-
-        mintedTillNow++;
+    function addAdmin() public onlyAdmin {
+      
     }
 
-    function removeAdmin() external nonReentrant {
-        uint256 tokenId = totalSupply() + 1;
-        // console.logBytes(_proof[0]);
-
-        _safeMint(msg.sender, tokenId);
-
-        emit Mint(tokenId, msg.sender);
-
-        mintedTillNow++;
+    function removeAdmin() public onlyAdmin {
+       
     }
 
     function deployProjectClone(
-        address _implementationContract,
-        string memory _name,
-        string memory _projectSlug,
-        uint _prioritizerShare,
-        uint _contributorShare,
-        uint _validatorShare
+        address implementationContract,
+        string memory name,
+        string memory projectSlug,
+        uint prioritizerShare,
+        uint contributorShare,
+        uint validatorShare
     ) external returns (address) {
         require(
-            proxies[_communitySlug] ==
+            projects[projectSlug] ==
                 0x0000000000000000000000000000000000000000,
             "Project exists already with the same name, use different identifier"
         );
@@ -75,7 +63,7 @@ contract EcosystemContract is Ownable, ReentrancyGuard, Initializable {
         // convert the address to 20 bytes
 
         bytes20 implementationContractInBytes = bytes20(
-            _implementationContract
+            implementationContract
         );
 
         //address to assign a cloned proxy
@@ -138,18 +126,20 @@ contract EcosystemContract is Ownable, ReentrancyGuard, Initializable {
             proxy := create(0, clone, 0x37)
         }
 
+       
         // Call initialization
         ProjectContract(proxy).initialize(
-            _name,
-            _projectSlug,
-            _prioritizerShare,
-            _contributorShare,
-            _validatorShare
+            name,
+            projectSlug,
+            _ecosystemToken,
+            prioritizerShare,
+            contributorShare,
+            validatorShare
         );
 
-        projects[_projectSlug] = proxy;
+        projects[projectSlug] = proxy;
 
-        emit AddProject(_name, proxy);
+        emit AddProject(name, proxy);
 
         return proxy;
     }

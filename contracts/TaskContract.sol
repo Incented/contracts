@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -53,6 +53,7 @@ contract TaskContract {
     // this function needs to get protected so that it can only be called once.. will do soon. -- Done
     function initialize(
         address _project,
+        string memory _taskName,
         uint256 _reward,
         address _creator,
         address _tokenAddress,

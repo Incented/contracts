@@ -11,11 +11,11 @@ contract MPFEcosystem {
     function deployEcosystemClone(
         address _implementationContract,
         string memory _name,
-        string memory _communitySlug,
+        string memory _ecosystemSlug,
         address _ecosystemToken
     ) external returns (address) {
         require(
-            proxies[_communitySlug] == 0x0000000000000000000000000000000000000000,
+            proxies[_ecosystemSlug] == 0x0000000000000000000000000000000000000000,
             "Community exists already with the same name, use different identifier"
         );
 

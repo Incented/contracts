@@ -3,13 +3,10 @@ pragma solidity ^0.8.9;
 
 import "./TaskContract.sol";
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-contract ProjectContract is Ownable, ReentrancyGuard, Initializable {
+
+contract ProjectContract is Initializable {
     mapping(string => address) tasks;
 
     bool public isInitialized;
@@ -23,43 +20,50 @@ contract ProjectContract is Ownable, ReentrancyGuard, Initializable {
     event AddAdmin(address adminAddress);
     event RemoveAdmin(address adminAddress);
 
-    event AddTask(uint taskId);
-    event RemoveTask(uint taskId);
+    event AddTask(address taskAddress);
+    event RemoveTask(address taskAddress);
+
 
     function initialize(
         string memory name,
+        string memory projectSlug,
+        address ecosystemToken,
         uint prioritizerShare,
         uint contributorShare,
         uint validatorShare
     ) public initializer {
         isInitialized = true;
 
+
         _name = name;
         _ecosystemToken = ecosystemToken;
 
-        _prioritizerShare = prioritizersShare;
+        _prioritizerShare = prioritizerShare;
         _contributorShare = contributorShare;
         _validatorShare = validatorShare;
     }
 
-    function addTask() external nonReentrant {}
+    function addTask() external  {}
 
-    function removeTask() external nonReentrant {}
+    function removeTask() external  {}
 
     function deployTaskClone(
-        address _implementationContract,
-        string memory _name,
-        string memory _taskSlug
+        address implementationContract,
+        string memory name,
+        string memory taskSlug,
+        uint256 reward,
+        address creator,
+        uint256 endTime
     ) external returns (address) {
         require(
-            proxies[_taskSlug] == 0x0000000000000000000000000000000000000000,
+            tasks[taskSlug] == 0x0000000000000000000000000000000000000000,
             "Task exists already with the same name, use different identifier"
         );
 
         // convert the address to 20 bytes
 
         bytes20 implementationContractInBytes = bytes20(
-            _implementationContract
+            implementationContract
         );
 
         //address to assign a cloned proxy
@@ -121,13 +125,14 @@ contract ProjectContract is Ownable, ReentrancyGuard, Initializable {
             // code size == 0x37 (55 bytes)
             proxy := create(0, clone, 0x37)
         }
+        
 
         // Call initialization
-        TaskContract(proxy).initialize(_name, _taskSlug);
+        TaskContract(proxy).initialize(proxy, name, reward, creator, _ecosystemToken, endTime);
 
-        tasks[_taskSlug] = proxy;
+        tasks[taskSlug] = proxy;
 
-        emit AddTask(_name, proxy);
+        emit AddTask(proxy);
 
         return proxy;
     }
