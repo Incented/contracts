@@ -69,6 +69,7 @@ contract TaskContract {
             TaskStatus.Created,
             IERC20(_tokenAddress)
         );
+        initialized = true;
     }
 
     function submitContribution() external {}
@@ -130,7 +131,7 @@ contract TaskContract {
             for (
                 uint256 i = 0;
                 i < ValidationPhase.stakersAgainstKeys.length;
-                i
+                ++i
             ) {
                 address staker = ValidationPhase.stakersAgainstKeys[i];
                 uint256 stake = ValidationPhase.againstStakes[staker];
@@ -142,7 +143,7 @@ contract TaskContract {
             for (
                 uint256 i = 0;
                 i < ValidationPhase.stakersForKeys.length;
-                i++
+                ++i
             ) {
                 address staker = ValidationPhase.stakersForKeys[i];
                 uint256 stake = ValidationPhase.forStakes[staker];
@@ -199,7 +200,20 @@ contract TaskContract {
 
     // this needs logic to settle the funds. There are two outcomes. the contribuitor gets the funds or the task is not completed
     // and the funds get sent back to the project.
-    function settle() external {}
+    function settle() external {
+        require(TaskStatus.ValidationEnded, "Validation is not over");
+        if (ValidationPhase.forWon) {
+            require(
+                Task.token.transfer(ValidationPhase.contributor, Task.reward),
+                "Reward transfer failed"
+            );
+        } else {
+            require(
+                Task.token.transfer(Task.project, Task.reward),
+                "Reward transfer failed"
+            );
+        }
+    }
 }
 
 /////// TASK MVP WORKFLOW ////
