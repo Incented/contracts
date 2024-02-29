@@ -97,7 +97,7 @@ contract MPFEcosystem {
         return proxy;
     }
 
-    function getProxies(string memory _ecosystemSlug) public view returns (address) {
+    function getEcosystems(string memory _ecosystemSlug) public view returns (address) {
         require(
 
             proxies[_ecosystemSlug] != 0x0000000000000000000000000000000000000000,
