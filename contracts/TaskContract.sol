@@ -3,14 +3,7 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-//This contract is created by a community. This is the tasks that communites generate. Not all functionality is built. Will add natspec comments later.
-
-// Functionality still needed to be implemented:
-// - Time locking for voting periods.
-// - Validation staking
-// - Adding what the quorum
-// - settlement of funds at the end
-// - slashing of staking for the negative outcome
+// Add the openzeppelin intializable contract here too
 
 contract TaskContract {
     bool public initialized;
@@ -82,11 +75,7 @@ contract TaskContract {
     }
 
     // Staking for validation
-    function stakeForValidation(
-        uint256 taskId,
-        uint256 amount,
-        bool validate
-    ) external {
+    function stakeForValidation(uint256 amount, bool validate) external {
         require(
             block.timestamp >= validationPhase.endTime,
             "voting period inactive"
