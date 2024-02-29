@@ -2,6 +2,8 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contract/token/SafeERC20.sol";
+
 
 // Add the openzeppelin intializable contract here too
 
@@ -45,6 +47,14 @@ contract TaskContract {
     }
     ValidationPhase validationPhase;
 
+    /////////// EVENTS /////////////
+    Event TaskCreated(address project, address creator, uint256 reward);
+    Event TaskContributedTo(address contributor, uint256 amount);
+    Event TaskValidation(address contributor, bool validated, uint256 amount);
+    Event TaskContribution(address contributor, uint256 amount);
+    Event TaskSettled(address contributor, uint256 amount);
+
+
     modifier isInitialized() {
         require(!initialized, "Contract is already initialized");
         _;
@@ -73,6 +83,7 @@ contract TaskContract {
 
     function submitContribution() external {
         validationPhase.contributor = msg.sender;
+        emit TaskContributedTo(msg.sender);
     }
 
     // Staking for validation
@@ -95,10 +106,14 @@ contract TaskContract {
             validationForStakes[msg.sender] += amount;
             validationPhase.totalForStakes += amount;
             validationPhase.stakersForKeys.push(msg.sender);
+
+            Emit TaskValidation(msg.sender, true, amount);
         } else {
             validationAgainstStakes[msg.sender] += amount;
             validationPhase.totalAgainstStakes += amount;
             validationPhase.stakersAgainstKeys.push(msg.sender);
+
+            Emit TaskValidation(msg.sender, false, amount);
         }
     }
 
