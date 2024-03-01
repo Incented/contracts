@@ -1,6 +1,5 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { task } = require("hardhat/config");
 
 describe("TaskContract", function () {
     let owner, addr1, addr2, token, taskContract;
