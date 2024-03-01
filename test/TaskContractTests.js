@@ -69,4 +69,92 @@ describe("TaskContract", function () {
     });
 
 
+    // function calculateWinners() public {
+    //     require(
+    //         block.timestamp > validationPhase.endTime,
+    //         "Validation period still active"
+    //     );
+
+    //     if (
+    //         validationPhase.totalForStakes > validationPhase.totalAgainstStakes
+    //     ) {
+    //         validationPhase.winnerTotalStake = validationPhase.totalForStakes;
+    //         validationPhase.loserTotalStake = validationPhase
+    //             .totalAgainstStakes;
+    //         validationPhase.forWon = true;
+    //     } else {
+    //         validationPhase.winnerTotalStake = validationPhase
+    //             .totalAgainstStakes;
+    //         validationPhase.loserTotalStake = validationPhase.totalForStakes;
+    //         validationPhase.forWon = false;
+    //     }
+    // }
+    describe("calculateWinners", function () {
+        it("Should revert because voting period is still active", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            expect(taskContract.calculateWinners()).to.be.revertedWith("Validation period still active");
+        });
+        it("Should lose the validation in a situation of a tie also asign losers and winners stake", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            await token.connect(addr1).approve(taskAdd, 1000);
+            await taskContract.connect(addr1).stakeForValidation(1000, true);
+            await token.connect(addr2).approve(taskAdd, 1000);
+            await taskContract.connect(addr2).stakeForValidation(1000, false);
+            await network.provider.send("evm_increaseTime", [3800]);
+            await network.provider.send("evm_mine");
+            const forvotes = await taskContract.getTotalForStakes();
+            const againstvotes = await taskContract.getTotalAgainstStakes();
+            console.log(forvotes, againstvotes);
+            await taskContract.calculateWinners();
+            const winnerTotalStake = await taskContract.getWinnerTotalStake();
+            const loserTotalStake = await taskContract.getLoserTotalStake();
+            const forWon = await taskContract.getForWon();
+            expect(winnerTotalStake).to.equal(1000);
+            expect(loserTotalStake).to.equal(1000);
+            expect(forWon).to.equal(false);
+        });
+        it("Should lose the validation and also asign losers and winners stake", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            await token.connect(addr1).approve(taskAdd, 1000);
+            await taskContract.connect(addr1).stakeForValidation(1000, true);
+            await token.connect(addr2).approve(taskAdd, 1000);
+            await taskContract.connect(addr2).stakeForValidation(1000, false);
+            await token.connect(addr3).approve(taskAdd, 1000);
+            await taskContract.connect(addr3).stakeForValidation(1000, false);
+            await network.provider.send("evm_increaseTime", [3800]);
+            await network.provider.send("evm_mine");
+            const forvotes = await taskContract.getTotalForStakes();
+            const againstvotes = await taskContract.getTotalAgainstStakes();
+            console.log(forvotes, againstvotes);
+            await taskContract.calculateWinners();
+            const winnerTotalStake = await taskContract.getWinnerTotalStake();
+            const loserTotalStake = await taskContract.getLoserTotalStake();
+            const forWon = await taskContract.getForWon();
+            expect(winnerTotalStake).to.equal(2000);
+            expect(loserTotalStake).to.equal(1000);
+            expect(forWon).to.equal(false);
+        });
+        it("Should win the validation and also asign losers and winners stake", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            await token.connect(addr1).approve(taskAdd, 1000);
+            await taskContract.connect(addr1).stakeForValidation(1000, true);
+            await token.connect(addr2).approve(taskAdd, 1000);
+            await taskContract.connect(addr2).stakeForValidation(1000, false);
+            await token.connect(addr3).approve(taskAdd, 1000);
+            await taskContract.connect(addr3).stakeForValidation(1000, true);
+            await network.provider.send("evm_increaseTime", [3800]);
+            await network.provider.send("evm_mine");
+            const forvotes = await taskContract.getTotalForStakes();
+            const againstvotes = await taskContract.getTotalAgainstStakes();
+            console.log(forvotes, againstvotes);
+            await taskContract.calculateWinners();
+            const winnerTotalStake = await taskContract.getWinnerTotalStake();
+            const loserTotalStake = await taskContract.getLoserTotalStake();
+            const forWon = await taskContract.getForWon();
+            expect(winnerTotalStake).to.equal(2000);
+            expect(loserTotalStake).to.equal(1000);
+            expect(forWon).to.equal(true);
+        });
+    })
+
 });

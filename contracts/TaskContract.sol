@@ -237,6 +237,26 @@ contract TaskContract {
     function getStakeAgainst(address staker) public view returns (uint256) {
         return validationAgainstStakes[staker];
     }
+
+    function getTotalForStakes() public view returns (uint256) {
+        return validationPhase.totalForStakes;
+    }
+
+    function getTotalAgainstStakes() public view returns (uint256) {
+        return validationPhase.totalAgainstStakes;
+    }
+
+    function getWinnerTotalStake() public view returns (uint256) {
+        return validationPhase.winnerTotalStake;
+    }
+
+    function getLoserTotalStake() public view returns (uint256) {
+        return validationPhase.loserTotalStake;
+    }
+
+    function getForWon() public view returns (bool) {
+        return validationPhase.forWon;
+    }
 }
 
 /////// TASK MVP WORKFLOW ////
