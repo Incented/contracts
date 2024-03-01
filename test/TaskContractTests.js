@@ -50,7 +50,7 @@ describe("TaskContract", function () {
             await network.provider.send("evm_mine");
             await token.approve(taskAdd, 10);
             expect(taskContract.stakeForValidation(10, true)).to.be.revertedWith("voting period inactive");
-        })
+        });
         it("Should stake for validation", async function () {
             await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
             await token.connect(addr1).approve(taskAdd, 1000);
@@ -68,27 +68,6 @@ describe("TaskContract", function () {
 
     });
 
-
-    // function calculateWinners() public {
-    //     require(
-    //         block.timestamp > validationPhase.endTime,
-    //         "Validation period still active"
-    //     );
-
-    //     if (
-    //         validationPhase.totalForStakes > validationPhase.totalAgainstStakes
-    //     ) {
-    //         validationPhase.winnerTotalStake = validationPhase.totalForStakes;
-    //         validationPhase.loserTotalStake = validationPhase
-    //             .totalAgainstStakes;
-    //         validationPhase.forWon = true;
-    //     } else {
-    //         validationPhase.winnerTotalStake = validationPhase
-    //             .totalAgainstStakes;
-    //         validationPhase.loserTotalStake = validationPhase.totalForStakes;
-    //         validationPhase.forWon = false;
-    //     }
-    // }
     describe("calculateWinners", function () {
         it("Should revert because voting period is still active", async function () {
             await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
@@ -154,6 +133,73 @@ describe("TaskContract", function () {
             expect(winnerTotalStake).to.equal(2000);
             expect(loserTotalStake).to.equal(1000);
             expect(forWon).to.equal(true);
+        });
+    })
+
+
+    // function updateLosersStake() external {
+    //     require(
+    //         block.timestamp > validationPhase.endTime,
+    //         "Voting has not ended yet"
+    //     );
+    //     require(
+    //         validationPhase.winnerTotalStake > 0,
+    //         "Winners must be determined"
+    //     );
+
+    //     uint256 loserFee = (validationPhase.loserTotalStake * 5) / 100; // Calculate 5% of the losing side's stake
+    //     if (validationPhase.forWon) {
+    //         for (
+    //             uint256 i = 0;
+    //             i < validationPhase.stakersAgainstKeys.length;
+    //             ++i
+    //         ) {
+    //             address staker = validationPhase.stakersAgainstKeys[i];
+    //             uint256 stake = validationAgainstStakes[staker];
+    //             uint256 lostStake = stake - (stake * loserFee);
+    //             validationAgainstStakes[staker] = stake - lostStake;
+    //             validationPhase.poolPrize += lostStake;
+    //         }
+    //     } else {
+    //         for (
+    //             uint256 i = 0;
+    //             i < validationPhase.stakersForKeys.length;
+    //             ++i
+    //         ) {
+    //             address staker = validationPhase.stakersForKeys[i];
+    //             uint256 stake = validationForStakes[staker];
+    //             uint256 lostStake = stake - (stake * loserFee);
+    //             validationForStakes[staker] = stake - lostStake;
+    //             validationPhase.poolPrize += lostStake;
+    //         }
+    //         validationPhase.losersStakeUpdated = true;
+    //     }
+    // }
+    describe("updateLosersStake", function () {
+        it("Should revert because voting period is still active", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            expect(taskContract.updateLosersStake()).to.be.revertedWith("Voting has not ended yet");
+        });
+        it("Should revert because winners must be determined", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            await network.provider.send("evm_increaseTime", [3800]);
+            await network.provider.send("evm_mine");
+            expect(taskContract.updateLosersStake()).to.be.revertedWith("Winners must be determined");
+        });
+        it("Should update losers stake", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            await token.connect(addr1).approve(taskAdd, 1000);
+            await taskContract.connect(addr1).stakeForValidation(1000, true);
+            await token.connect(addr2).approve(taskAdd, 1000);
+            await taskContract.connect(addr2).stakeForValidation(1000, false);
+            await token.connect(addr3).approve(taskAdd, 1000);
+            await taskContract.connect(addr3).stakeForValidation(1000, true);
+            await network.provider.send("evm_increaseTime", [3800]);
+            await network.provider.send("evm_mine");
+            await taskContract.calculateWinners();
+            await taskContract.updateLosersStake();
+            const loserTotalStake = await taskContract.getLoserTotalStake();
+            expect(loserTotalStake).to.equal(950);
         });
     })
 

@@ -35,7 +35,6 @@ contract TaskContract {
         address[] stakersAgainstKeys;
         uint256 totalForStakes;
         uint256 totalAgainstStakes;
-        bool votingEnded;
         bool forWon;
         uint256 winnerTotalStake;
         uint256 loserTotalStake;
@@ -130,7 +129,10 @@ contract TaskContract {
     }
 
     function updateLosersStake() external {
-        require(validationPhase.votingEnded, "Voting has not ended yet");
+        require(
+            block.timestamp > validationPhase.endTime,
+            "Voting has not ended yet"
+        );
         require(
             validationPhase.winnerTotalStake > 0,
             "Winners must be determined"
@@ -145,7 +147,7 @@ contract TaskContract {
             ) {
                 address staker = validationPhase.stakersAgainstKeys[i];
                 uint256 stake = validationAgainstStakes[staker];
-                uint256 lostStake = stake - (stake * loserFee);
+                uint256 lostStake = (stake * 5) / 100;
                 validationAgainstStakes[staker] = stake - lostStake;
                 validationPhase.poolPrize += lostStake;
             }
@@ -157,7 +159,7 @@ contract TaskContract {
             ) {
                 address staker = validationPhase.stakersForKeys[i];
                 uint256 stake = validationForStakes[staker];
-                uint256 lostStake = stake - (stake * loserFee);
+                uint256 lostStake = (stake * 5) / 100;
                 validationForStakes[staker] = stake - lostStake;
                 validationPhase.poolPrize += lostStake;
             }
