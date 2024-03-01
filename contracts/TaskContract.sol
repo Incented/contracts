@@ -268,7 +268,7 @@ contract TaskContract {
 //     bool votingEnded;
 // }
 
-//Helper fuction to distribute the rewards. This should be called
+// Helper fuction to distribute the rewards. This should be called
 // Decided not to use those because we shouldnt be sending rewards but rather having users claim them.
 // We can do that in the settlement
 // function distributeRewards() public {

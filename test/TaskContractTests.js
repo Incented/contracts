@@ -1,19 +1,24 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-require('dotenv').config()
 
 describe("TaskContract", function () {
-    let taskContract;
-    let owner, addr1, addr2, token;
+    let owner, addr1, addr2, token, taskContract;
 
     beforeEach(async function () {
         // Deploy the contract and a mock ERC20 token for testing
         const TaskContract = await ethers.getContractFactory("TaskContract");
+        taskContract = await TaskContract.deploy();
+
         const MockERC20 = await ethers.getContractFactory("MockERC20");
+        token = await MockERC20.deploy("MockToken", "MTK");
 
         [owner, addr1, addr2] = await ethers.getSigners();
-        token = await MockERC20.deploy("MockToken", "MTK", 1000);
-        taskContract = await TaskContract.deploy();
+
+        console.log(taskContract.address);
+        console.log(token.address);
+        console.log(owner.address);
+        console.log(addr1.address);
+        console.log(addr2.address);
 
     });
 
