@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contract/token/SafeERC20.sol";
-
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Add the openzeppelin intializable contract here too
 
@@ -48,12 +47,10 @@ contract TaskContract {
     ValidationPhase validationPhase;
 
     /////////// EVENTS /////////////
-    Event TaskCreated(address project, address creator, uint256 reward);
-    Event TaskContributedTo(address contributor, uint256 amount);
-    Event TaskValidation(address contributor, bool validated, uint256 amount);
-    Event TaskContribution(address contributor, uint256 amount);
-    Event TaskSettled(address contributor, uint256 amount);
-
+    event TaskCreated(address project, address creator, uint256 reward);
+    event TaskValidation(address contributor, bool validated, uint256 amount);
+    event TaskContribution(address contributor);
+    event TaskSettled(address contributor, uint256 amount);
 
     modifier isInitialized() {
         require(!initialized, "Contract is already initialized");
@@ -63,7 +60,6 @@ contract TaskContract {
     // this function needs to get protected so that it can only be called once.. will do soon. -- Done
     function initialize(
         address _project,
-        string memory _taskName,
         uint256 _reward,
         address _creator,
         address _tokenAddress,
@@ -83,7 +79,7 @@ contract TaskContract {
 
     function submitContribution() external {
         validationPhase.contributor = msg.sender;
-        emit TaskContributedTo(msg.sender);
+        emit TaskContribution(msg.sender);
     }
 
     // Staking for validation
@@ -107,13 +103,13 @@ contract TaskContract {
             validationPhase.totalForStakes += amount;
             validationPhase.stakersForKeys.push(msg.sender);
 
-            Emit TaskValidation(msg.sender, true, amount);
+            emit TaskValidation(msg.sender, true, amount);
         } else {
             validationAgainstStakes[msg.sender] += amount;
             validationPhase.totalAgainstStakes += amount;
             validationPhase.stakersAgainstKeys.push(msg.sender);
 
-            Emit TaskValidation(msg.sender, false, amount);
+            emit TaskValidation(msg.sender, false, amount);
         }
     }
 

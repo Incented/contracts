@@ -1,15 +1,41 @@
 require("@nomicfoundation/hardhat-toolbox");
 require('@openzeppelin/hardhat-upgrades');
+require("@nomicfoundation/hardhat-ethers");
+require('dotenv').config();
 
-const keys = require("./constants.js");
 
 
+// Updated this to just be the full URL rather than just the API key
 module.exports = {
-  solidity: "0.8.24",
+  defaultNetwork: "hardhat",
   networks: {
-    arbitrum_sepolia: {
-      url: `https://arb-sepolia.g.alchemy.com/v2/${keys.ARBITRUM_ALCHEMY_KEY}`,
-      accounts: [keys.PRIVATE_KEY]
-    },
+    hardhat: {
+      accounts: {
+        balance: "10000000000000000000000" // 10,000 ETH
+      }
+    }
   },
-};
+  arbitrum_sepolia: {
+    url: process.env.ARBITRUM_ALCHEMY_KEY,
+    accounts: [process.env.PRIVATE_KEY]
+  },
+
+  solidity: {
+    version: "0.8.20",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
+  },
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts"
+  },
+  mocha: {
+    timeout: 40000
+  }
+}
