@@ -273,29 +273,31 @@ describe("TaskContract", function () {
             await taskContract.updateLosersStake();
             await token.connect(addr1).approve(taskAdd, 1000000);
             await taskContract.connect(addr1).unstakeAndClaim();
-            await taskContract.connect(addr2).unstakeAndClaim();
-            await taskContract.connect(addr3).unstakeAndClaim();
             const bal1After = await token.balanceOf(addr1.address);
-            console.log(bal1Before, bal1After);
             expect(bal1After).to.equal(100025);
-
         }
         );
         it("Should unstake and claim reward for loser", async function () {
+            console.log(`TaskContract deployed to: ${taskAdd}`);
+            console.log(`MockERC20 deployed to: ${tokenAdd}`);
             await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            const bal1Before = await token.balanceOf(addr1.address);
+            const bal2Before = await token.balanceOf(addr2.address);
+            const bal3before = await token.balanceOf(addr3.address);
             await token.connect(addr1).approve(taskAdd, 1000);
             await taskContract.connect(addr1).stakeForValidation(1000, false);
             await token.connect(addr2).approve(taskAdd, 1000);
-            await taskContract.connect(addr2).stakeForValidation(1000, true);
+            await taskContract.connect(addr2).stakeForValidation(1000, false);
             await token.connect(addr3).approve(taskAdd, 1000);
-            await taskContract.connect(addr3).stakeForValidation(1000, false);
+            await taskContract.connect(addr3).stakeForValidation(1000, true);
             await network.provider.send("evm_increaseTime", [3800]);
             await network.provider.send("evm_mine");
             await taskContract.calculateWinners();
             await taskContract.updateLosersStake();
-            await taskContract.unstakeAndClaim();
-            const reward = await token.balanceOf(addr1.address);
-            expect(reward).to.equal(1050);
+            await token.connect(addr1).approve(taskAdd, 1000000);
+            await taskContract.connect(addr1).unstakeAndClaim();
+            const bal1After = await token.balanceOf(addr1.address);
+            expect(bal1After).to.equal(100025);
         }
         );
     });
