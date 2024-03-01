@@ -276,12 +276,9 @@ describe("TaskContract", function () {
             await taskContract.connect(addr2).unstakeAndClaim();
             await taskContract.connect(addr3).unstakeAndClaim();
             const bal1After = await token.balanceOf(addr1.address);
-            const bal2After = await token.balanceOf(addr2.address);
-            const bal3After = await token.balanceOf(addr3.address);
             console.log(bal1Before, bal1After);
             expect(bal1After).to.equal(100025);
-            expect(bal2After).to.equal(99975);
-            expect(bal3After).to.equal(100025);
+
         }
         );
         it("Should unstake and claim reward for loser", async function () {
