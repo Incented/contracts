@@ -2,7 +2,7 @@ const hre = require("hardhat");
 
 async function main() {
     const ImplementationContractEcosystem = await hre.ethers.getContractFactory(
-        "EcosystemContract"
+        "EcosystemContact2"
     );
 
     const ImplementationContractProject = await hre.ethers.getContractFactory(
@@ -12,7 +12,7 @@ async function main() {
         "TaskContract"
     );
 
-    
+
 
     // deploy the implementation contract of Ecosystem, project and task
     const implementationContractEcosystem = await ImplementationContractEcosystem.deploy();
@@ -38,7 +38,7 @@ async function main() {
 
     console.log("Minimal proxy factory contract ", minimalProxyFactory.address);
 
-   
+
 
     // call the deploy clone function on the minimal factory contract and pass parameters
     const deployCloneContractEcosystem = await minimalProxyFactory.deployEcosystemClone(implementationContractEcosystem.address, "Arbitrum", "arbitrum", "tokenAddress");
@@ -60,7 +60,7 @@ async function main() {
         ProxyAddress1
     );
 
-  
+
 
     console.log("Proxy 1 is initialized == ", await proxy1.isInitialized());
 

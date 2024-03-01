@@ -22,7 +22,6 @@ contract TaskContract {
 
     enum TaskStatus {
         Created,
-        PriotizationInProgress,
         ContributionInProgress,
         ValidationInProgress,
         ValidationEnded,
@@ -69,7 +68,7 @@ contract TaskContract {
             _project,
             _creator,
             _reward,
-            TaskStatus.Created,
+            TaskStatus.ValidationInProgress,
             IERC20(_tokenAddress)
         );
         validationPhase.endTime = _endTime;
@@ -87,10 +86,6 @@ contract TaskContract {
         require(
             block.timestamp >= validationPhase.endTime,
             "voting period inactive"
-        );
-        require(
-            block.timestamp <= validationPhase.endTime,
-            "Voting period inactive"
         );
         require(amount > 0, "Amount must be greater than 0");
         require(
