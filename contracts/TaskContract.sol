@@ -137,8 +137,6 @@ contract TaskContract {
             validationPhase.winnerTotalStake > 0,
             "Winners must be determined"
         );
-
-        uint256 loserFee = (validationPhase.loserTotalStake * 5) / 100; // Calculate 5% of the losing side's stake
         if (validationPhase.forWon) {
             for (
                 uint256 i = 0;
@@ -163,8 +161,8 @@ contract TaskContract {
                 validationForStakes[staker] = stake - lostStake;
                 validationPhase.poolPrize += lostStake;
             }
-            validationPhase.losersStakeUpdated = true;
         }
+        validationPhase.losersStakeUpdated = true;
     }
 
     // In this function we will also caluclate the pool prize and how it is split amongst the winners.
@@ -191,7 +189,7 @@ contract TaskContract {
             validationForStakes[msg.sender] = 0;
 
             require(
-                task.token.transfer(msg.sender, reward),
+                task.token.transferFrom(address(this), msg.sender, reward),
                 "Reward transfer failed"
             );
         } else {
@@ -206,7 +204,7 @@ contract TaskContract {
             validationAgainstStakes[msg.sender] = 0;
 
             require(
-                task.token.transfer(msg.sender, reward),
+                task.token.transferFrom(address(this), msg.sender, reward),
                 "Reward transfer failed"
             );
         }

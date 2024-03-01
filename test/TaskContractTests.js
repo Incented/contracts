@@ -217,6 +217,109 @@ describe("TaskContract", function () {
             expect(loserTotalStake).to.equal(950);
             expect(await taskContract.getPoolPrize()).to.equal(50);
         });
-    })
+    });
 
+    // function unstakeAndClaim() external {
+    //     require(
+    //         task.status != TaskStatus.ValidationEnded,
+    //         "Validation is not over"
+    //     );
+    //     require(validationPhase.losersStakeUpdated, "Losers stake not updated");
+    //     require(
+    //         validationPhase.poolPrize > 0,
+    //         "Pool prize must be greater than 0"
+    //     );
+
+    //     if (validationPhase.forWon) {
+    //         require(validationForStakes[msg.sender] > 0);
+    //         uint256 reward;
+
+    //         uint256 ratioOfPrizepool = validationForStakes[msg.sender] /
+    //             validationPhase.winnerTotalStake;
+    //         reward = ratioOfPrizepool * validationPhase.poolPrize;
+
+    //         reward += validationForStakes[msg.sender];
+    //         validationForStakes[msg.sender] = 0;
+
+    //         require(
+    //             task.token.transfer(msg.sender, reward),
+    //             "Reward transfer failed"
+    //         );
+    //     } else {
+    //         require(validationAgainstStakes[msg.sender] > 0);
+    //         uint256 reward;
+
+    //         uint256 ratioOfPrizepool = validationAgainstStakes[msg.sender] /
+    //             validationPhase.winnerTotalStake;
+    //         reward = ratioOfPrizepool * validationPhase.poolPrize;
+
+    //         reward += validationAgainstStakes[msg.sender];
+    //         validationAgainstStakes[msg.sender] = 0;
+
+    //         require(
+    //             task.token.transfer(msg.sender, reward),
+    //             "Reward transfer failed"
+    //         );
+    //     }
+    // }
+    describe("unstakeAndClaim", function () {
+        it("Should revert because validation is not over", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            expect(taskContract.unstakeAndClaim()).to.be.revertedWith("Validation is not over");
+        });
+        it("Should revert because losers stake not updated", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            await network.provider.send("evm_increaseTime", [3800]);
+            await network.provider.send("evm_mine");
+            expect(taskContract.unstakeAndClaim()).to.be.revertedWith("Losers stake not updated");
+        });
+        it("Should revert because pool prize must be greater than 0", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            await token.connect(addr1).approve(taskAdd, 1000);
+            await taskContract.connect(addr1).stakeForValidation(1000, true);
+            await token.connect(addr2).approve(taskAdd, 1000);
+            await taskContract.connect(addr2).stakeForValidation(1000, false);
+            await token.connect(addr3).approve(taskAdd, 1000);
+            await taskContract.connect(addr3).stakeForValidation(1000, true);
+            await network.provider.send("evm_increaseTime", [3800]);
+            await network.provider.send("evm_mine");
+            await taskContract.calculateWinners();
+            expect(taskContract.unstakeAndClaim()).to.be.revertedWith("Pool prize must be greater than 0");
+        });
+        it("Should unstake and claim reward for winner", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            await token.connect(addr1).approve(taskAdd, 1000);
+            await taskContract.connect(addr1).stakeForValidation(1000, true);
+            await token.connect(addr2).approve(taskAdd, 1000);
+            await taskContract.connect(addr2).stakeForValidation(1000, false);
+            await token.connect(addr3).approve(taskAdd, 1000);
+            await taskContract.connect(addr3).stakeForValidation(1000, true);
+            await network.provider.send("evm_increaseTime", [3800]);
+            await network.provider.send("evm_mine");
+            await taskContract.calculateWinners();
+            await taskContract.updateLosersStake();
+            await token.connect(addr1).approve(taskContract.address, 1000);
+            await taskContract.connect(addr1).unstakeAndClaim();
+            const reward = await token.balanceOf(addr1.address);
+            expect(reward).to.equal(1050);
+        }
+        );
+        it("Should unstake and claim reward for loser", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            await token.connect(addr1).approve(taskAdd, 1000);
+            await taskContract.connect(addr1).stakeForValidation(1000, false);
+            await token.connect(addr2).approve(taskAdd, 1000);
+            await taskContract.connect(addr2).stakeForValidation(1000, true);
+            await token.connect(addr3).approve(taskAdd, 1000);
+            await taskContract.connect(addr3).stakeForValidation(1000, false);
+            await network.provider.send("evm_increaseTime", [3800]);
+            await network.provider.send("evm_mine");
+            await taskContract.calculateWinners();
+            await taskContract.updateLosersStake();
+            await taskContract.unstakeAndClaim();
+            const reward = await token.balanceOf(addr1.address);
+            expect(reward).to.equal(1050);
+        }
+        );
+    });
 });
