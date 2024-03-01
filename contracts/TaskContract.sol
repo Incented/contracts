@@ -234,6 +234,14 @@ contract TaskContract {
             );
         }
     }
+
+    function getStakeFor(address staker) public view returns (uint256) {
+        return validationForStakes[staker];
+    }
+
+    function getStakeAgainst(address staker) public view returns (uint256) {
+        return validationAgainstStakes[staker];
+    }
 }
 
 /////// TASK MVP WORKFLOW ////
