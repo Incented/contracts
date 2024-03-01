@@ -198,8 +198,24 @@ describe("TaskContract", function () {
             await network.provider.send("evm_mine");
             await taskContract.calculateWinners();
             await taskContract.updateLosersStake();
-            const loserTotalStake = await taskContract.getLoserTotalStake();
+            const loserTotalStake = await taskContract.getStakeAgainst(addr2.address);
             expect(loserTotalStake).to.equal(950);
+        });
+        it("Should update losers stake and pool prize", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            await token.connect(addr1).approve(taskAdd, 1000);
+            await taskContract.connect(addr1).stakeForValidation(1000, false);
+            await token.connect(addr2).approve(taskAdd, 1000);
+            await taskContract.connect(addr2).stakeForValidation(1000, true);
+            await token.connect(addr3).approve(taskAdd, 1000);
+            await taskContract.connect(addr3).stakeForValidation(1000, false);
+            await network.provider.send("evm_increaseTime", [3800]);
+            await network.provider.send("evm_mine");
+            await taskContract.calculateWinners();
+            await taskContract.updateLosersStake();
+            const loserTotalStake = await taskContract.getStakeFor(addr2.address);
+            expect(loserTotalStake).to.equal(950);
+            expect(await taskContract.getPoolPrize()).to.equal(50);
         });
     })
 

@@ -259,6 +259,10 @@ contract TaskContract {
     function getForWon() public view returns (bool) {
         return validationPhase.forWon;
     }
+
+    function getPoolPrize() public view returns (uint256) {
+        return validationPhase.poolPrize;
+    }
 }
 
 /////// TASK MVP WORKFLOW ////
