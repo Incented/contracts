@@ -13,7 +13,7 @@ contract ProjectContract {
     using SafeERC20 for IERC20;
     mapping(uint256 => address) tasks;
     uint256 public taskCount;
-    address public implementationContract;
+    address public taskImplementationContract;
     address ecosystem;
 
     struct Project {
@@ -24,10 +24,15 @@ contract ProjectContract {
     function initialize(
         address _ecosystem,
         address _taskContract,
-        address _ecosystemToken
+        address _ecosystemToken,
+        uint256 _amount,
+        uint256 _endTime
     ) external {
-        require(implementationContract == address(0), "Already initialized");
-        implementationContract = _taskContract;
+        require(
+            taskImplementationContract == address(0),
+            "Already initialized"
+        );
+        taskImplementationContract = _taskContract;
         ecosystem = _ecosystem;
     }
 
@@ -38,7 +43,7 @@ contract ProjectContract {
         address _tokenAddress,
         uint256 _endTime
     ) external {
-        address clone = Clones.clone(implementationContract);
+        address clone = Clones.clone(taskImplementationContract);
         TaskContract(clone).initialize(
             _project,
             _reward,

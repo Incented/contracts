@@ -19,9 +19,13 @@ describe("TaskContract", function () {
         token.mint(addr4, 100000);
         token.mint(addr5, 100000);
 
+
+
+
         [owner, addr1, addr2, addr3, addr4, addr5] = await ethers.getSigners();
         taskAdd = await taskContract.getAddress();
         tokenAdd = await token.getAddress();
+
 
     });
 
@@ -136,45 +140,6 @@ describe("TaskContract", function () {
         });
     })
 
-
-    // function updateLosersStake() external {
-    //     require(
-    //         block.timestamp > validationPhase.endTime,
-    //         "Voting has not ended yet"
-    //     );
-    //     require(
-    //         validationPhase.winnerTotalStake > 0,
-    //         "Winners must be determined"
-    //     );
-
-    //     uint256 loserFee = (validationPhase.loserTotalStake * 5) / 100; // Calculate 5% of the losing side's stake
-    //     if (validationPhase.forWon) {
-    //         for (
-    //             uint256 i = 0;
-    //             i < validationPhase.stakersAgainstKeys.length;
-    //             ++i
-    //         ) {
-    //             address staker = validationPhase.stakersAgainstKeys[i];
-    //             uint256 stake = validationAgainstStakes[staker];
-    //             uint256 lostStake = stake - (stake * loserFee);
-    //             validationAgainstStakes[staker] = stake - lostStake;
-    //             validationPhase.poolPrize += lostStake;
-    //         }
-    //     } else {
-    //         for (
-    //             uint256 i = 0;
-    //             i < validationPhase.stakersForKeys.length;
-    //             ++i
-    //         ) {
-    //             address staker = validationPhase.stakersForKeys[i];
-    //             uint256 stake = validationForStakes[staker];
-    //             uint256 lostStake = stake - (stake * loserFee);
-    //             validationForStakes[staker] = stake - lostStake;
-    //             validationPhase.poolPrize += lostStake;
-    //         }
-    //         validationPhase.losersStakeUpdated = true;
-    //     }
-    // }
     describe("updateLosersStake", function () {
         it("Should revert because voting period is still active", async function () {
             await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
@@ -284,10 +249,18 @@ describe("TaskContract", function () {
             await network.provider.send("evm_increaseTime", [3800]);
             await network.provider.send("evm_mine");
             await taskContract.calculateWinners();
+            await taskContract.updateLosersStake();
+            const prizePool = await taskContract.getPoolPrize()
             expect(taskContract.unstakeAndClaim()).to.be.revertedWith("Pool prize must be greater than 0");
+            expect(prizePool).to.equal(50);
         });
         it("Should unstake and claim reward for winner", async function () {
+            console.log(`TaskContract deployed to: ${taskAdd}`);
+            console.log(`MockERC20 deployed to: ${tokenAdd}`);
             await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            const bal1Before = await token.balanceOf(addr1.address);
+            const bal2Before = await token.balanceOf(addr2.address);
+            const bal3before = await token.balanceOf(addr3.address);
             await token.connect(addr1).approve(taskAdd, 1000);
             await taskContract.connect(addr1).stakeForValidation(1000, true);
             await token.connect(addr2).approve(taskAdd, 1000);
@@ -298,10 +271,17 @@ describe("TaskContract", function () {
             await network.provider.send("evm_mine");
             await taskContract.calculateWinners();
             await taskContract.updateLosersStake();
-            await token.connect(addr1).approve(taskContract.address, 1000);
+            await token.connect(addr1).approve(taskAdd, 1000000);
             await taskContract.connect(addr1).unstakeAndClaim();
-            const reward = await token.balanceOf(addr1.address);
-            expect(reward).to.equal(1050);
+            await taskContract.connect(addr2).unstakeAndClaim();
+            await taskContract.connect(addr3).unstakeAndClaim();
+            const bal1After = await token.balanceOf(addr1.address);
+            const bal2After = await token.balanceOf(addr2.address);
+            const bal3After = await token.balanceOf(addr3.address);
+            console.log(bal1Before, bal1After);
+            expect(bal1After).to.equal(100025);
+            expect(bal2After).to.equal(99975);
+            expect(bal3After).to.equal(100025);
         }
         );
         it("Should unstake and claim reward for loser", async function () {

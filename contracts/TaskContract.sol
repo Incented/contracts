@@ -177,37 +177,33 @@ contract TaskContract {
             "Pool prize must be greater than 0"
         );
 
-        if (validationPhase.forWon) {
-            require(validationForStakes[msg.sender] > 0);
-            uint256 reward;
+        uint256 reward = 0;
 
-            uint256 ratioOfPrizepool = validationForStakes[msg.sender] /
+        if (validationPhase.forWon) {
+            require(
+                validationForStakes[msg.sender] > 0,
+                "No stakes found for winner"
+            );
+
+            reward =
+                (validationForStakes[msg.sender] * validationPhase.poolPrize) /
                 validationPhase.winnerTotalStake;
-            reward = ratioOfPrizepool * validationPhase.poolPrize;
 
             reward += validationForStakes[msg.sender];
             validationForStakes[msg.sender] = 0;
-
-            require(
-                task.token.transferFrom(address(this), msg.sender, reward),
-                "Reward transfer failed"
-            );
         } else {
-            require(validationAgainstStakes[msg.sender] > 0);
-            uint256 reward;
-
-            uint256 ratioOfPrizepool = validationAgainstStakes[msg.sender] /
-                validationPhase.winnerTotalStake;
-            reward = ratioOfPrizepool * validationPhase.poolPrize;
-
-            reward += validationAgainstStakes[msg.sender];
-            validationAgainstStakes[msg.sender] = 0;
-
             require(
-                task.token.transferFrom(address(this), msg.sender, reward),
-                "Reward transfer failed"
+                validationAgainstStakes[msg.sender] > 0,
+                "No stakes found for loser"
             );
+
+            reward = validationAgainstStakes[msg.sender];
+            validationAgainstStakes[msg.sender] = 0;
         }
+        require(
+            task.token.transfer(msg.sender, reward),
+            "Reward transfer failed"
+        );
     }
 
     // this needs logic to settle the funds. There are two outcomes. the contribuitor gets the funds or the task is not completed
