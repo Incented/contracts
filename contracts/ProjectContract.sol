@@ -25,6 +25,23 @@ contract ProjectContract {
     address public taskImplementationContract;
     mapping(uint256 => address) tasks;
 
+    event TaskCreated(
+        address indexed task,
+        address project,
+        uint256 reward,
+        address creator,
+        address tokenAddress,
+        uint256 endTime
+    );
+
+    event StakeForPrioritization(
+        address indexed staker,
+        uint256 amount,
+        bool priotitize
+    );
+
+    event Withdraw(address indexed staker, uint256 amount);
+
     modifier isInitialized() {
         require(!initialized, "Contract is already initialized");
         _;
@@ -72,6 +89,14 @@ contract ProjectContract {
         );
         tasks[taskCount] = clone;
         taskCount++;
+        emit TaskCreated(
+            clone,
+            _project,
+            _reward,
+            _creator,
+            _tokenAddress,
+            _endTime
+        );
     }
 
     function stakeForPrioritization(uint256 amount, bool priotitize) external {
@@ -91,6 +116,7 @@ contract ProjectContract {
             totalAgainstStakes += amount;
             stakersAgainstKeys.push(msg.sender);
         }
+        emit StakeForPrioritization(msg.sender, amount, priotitize);
     }
 
     function selected() external onlyEcosystem {
@@ -111,6 +137,7 @@ contract ProjectContract {
         prioritzationForStakes[msg.sender] = 0;
         totalForStakes -= amount;
         token.safeTransfer(msg.sender, amount);
+        emit Withdraw(msg.sender, amount);
     }
 
     function getStakedForAmmount(

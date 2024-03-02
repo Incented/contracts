@@ -65,4 +65,13 @@ contract EcosystemContact2 {
         projects[projectCount] = clone;
         projectCount++;
     }
+
+    function recieveGrantMoney(uint256 _amount) external {
+        require(
+            _ecosystemToken.balanceOf(msg.sender) >= _amount,
+            "Insufficient balance"
+        );
+        _ecosystemToken.safeTransferFrom(msg.sender, address(this), _amount);
+        totalGrant += _amount;
+    }
 }
