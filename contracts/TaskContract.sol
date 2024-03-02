@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 // Add the openzeppelin intializable contract here too
 
 contract TaskContract {
-    bool public initialized;
     mapping(address staker => uint256 ammount) validationForStakes;
     mapping(address staker => uint256 ammount) validationAgainstStakes;
 
@@ -51,19 +50,13 @@ contract TaskContract {
     event TaskContribution(address contributor);
     event TaskSettled(address contributor, uint256 amount);
 
-    modifier isInitialized() {
-        require(!initialized, "Contract is already initialized");
-        _;
-    }
-
-    // this function needs to get protected so that it can only be called once.. will do soon. -- Done
-    function initialize(
+    constructor(
         address _project,
         uint256 _reward,
         address _creator,
         address _tokenAddress,
         uint256 _endTime
-    ) external isInitialized {
+    ) {
         task = Task(
             _project,
             _creator,
@@ -73,8 +66,6 @@ contract TaskContract {
         );
         validationPhase.endTime = _endTime;
         validationPhase.validationIsOver = false;
-
-        initialized = true;
     }
 
     function submitContribution() external {

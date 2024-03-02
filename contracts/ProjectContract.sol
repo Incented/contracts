@@ -2,14 +2,12 @@
 pragma solidity ^0.8.20;
 
 import "./TaskContract.sol";
-import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract ProjectContract {
     using SafeERC20 for IERC20;
     uint256 public projectID;
-    bool public initialized;
     address ecosystem;
     IERC20 token;
     uint256 endTime;
@@ -42,10 +40,6 @@ contract ProjectContract {
 
     event Withdraw(address indexed staker, uint256 amount);
 
-    modifier isInitialized() {
-        require(!initialized, "Contract is already initialized");
-        _;
-    }
     modifier onlyEcosystem() {
         require(
             msg.sender == ecosystem,
@@ -54,22 +48,16 @@ contract ProjectContract {
         _;
     }
 
-    function initialize(
-        uint256 _projectID,
+    constructor(
         uint256 _requestAmount,
-        address _ecoSystemToken,
         address _ecosystemAddress,
-        uint256 _endTime,
-        address _taskImplementationContract
-    ) external isInitialized {
-        projectID = _projectID;
+        address _grantToken,
+        uint256 _endTime
+    ) {
         requestedAmount = _requestAmount;
-        token = IERC20(_ecoSystemToken);
+        token = IERC20(_grantToken);
         ecosystem = _ecosystemAddress;
         endTime = _endTime;
-        taskImplementationContract = _taskImplementationContract;
-
-        initialized = true;
     }
 
     function createTask(
@@ -79,18 +67,17 @@ contract ProjectContract {
         address _tokenAddress,
         uint256 _endTime
     ) external {
-        address clone = Clones.clone(taskImplementationContract);
-        TaskContract(clone).initialize(
+        TaskContract task = new TaskContract(
             _project,
             _reward,
             _creator,
             _tokenAddress,
             _endTime
         );
-        tasks[taskCount] = clone;
+        tasks[taskCount] = address(task);
         taskCount++;
         emit TaskCreated(
-            clone,
+            address(task),
             _project,
             _reward,
             _creator,
