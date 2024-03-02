@@ -80,6 +80,7 @@ contract TaskContract {
             "voting period inactive"
         );
         require(amount > 0, "Amount must be greater than 0");
+        require(task.token.approve(address(this), amount), "Approval failed");
         require(
             task.token.transferFrom(msg.sender, address(this), amount),
             "Transfer failed"
