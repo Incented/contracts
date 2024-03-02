@@ -41,6 +41,7 @@ contract TaskContract {
         uint256 poolPrize;
         bool losersStakeUpdated;
         address contributor;
+        bool validationIsOver;
     }
     ValidationPhase validationPhase;
 
@@ -71,6 +72,7 @@ contract TaskContract {
             IERC20(_tokenAddress)
         );
         validationPhase.endTime = _endTime;
+        validationPhase.validationIsOver = false;
 
         initialized = true;
     }
@@ -126,6 +128,7 @@ contract TaskContract {
             validationPhase.loserTotalStake = validationPhase.totalForStakes;
             validationPhase.forWon = false;
         }
+        validationPhase.validationIsOver = true;
     }
 
     function updateLosersStake() external {
@@ -212,7 +215,7 @@ contract TaskContract {
     // and the funds get sent back to the project.
     function settle() external {
         require(
-            task.status == TaskStatus.ValidationEnded,
+            validationPhase.validationIsOver == true,
             "Validation is not over"
         );
         if (validationPhase.forWon) {
@@ -258,6 +261,10 @@ contract TaskContract {
 
     function getPoolPrize() public view returns (uint256) {
         return validationPhase.poolPrize;
+    }
+
+    function getContributor() public view returns (address) {
+        return validationPhase.contributor;
     }
 }
 
