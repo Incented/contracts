@@ -6,7 +6,7 @@ import "./ProjectContract.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract EcosystemContact2 {
+contract EcosystemContact {
     event ProjectCreated(
         address indexed project,
         uint256 reward,
@@ -20,22 +20,13 @@ contract EcosystemContact2 {
 
     mapping(uint256 => address) projects;
     uint256 public projectCount;
-    address public projectImplementationContract;
-    address public taskImplementationContract;
 
     string name;
     IERC20 _ecosystemToken = IERC20(0x466710434DBc9278887A64FD5759210167Cd26CE);
 
-    constructor(
-        string memory _name,
-        uint256 _totalGrant,
-        address _projectImplementationContract,
-        address _taskImplementationContract
-    ) {
+    constructor(string memory _name, uint256 _totalGrant) {
         name = _name;
         totalGrant = _totalGrant;
-        projectImplementationContract = _projectImplementationContract;
-        taskImplementationContract = _taskImplementationContract;
     }
 
     function createProject(
