@@ -263,6 +263,26 @@ contract TaskContract {
         return validationPhase.poolPrize;
     }
 
+
+    function getProject() public view returns (address) {
+        return task.project;
+    }
+
+    function getReward() public view returns (uint256) {
+        return task.reward;
+    }
+
+    function getCreator() public view returns (address) {
+        return task.creator;
+    }
+
+    function getToken() public view returns (IERC20) {
+        return task.token;
+    }
+
+    function getEndTime() public view returns (uint256) {
+        return validationPhase.endTime;
+
     function getContributor() public view returns (address) {
         return validationPhase.contributor;
     }

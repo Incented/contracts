@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import "./TaskContract.sol";
@@ -19,4 +19,23 @@ contract EcosystemContact2 {
         address ecosystemToken;
     }
     Ecosystem ecosystem;
+
+    function createProject(
+        address _projectID,
+        address projectAddress,
+        uint256 _totalGrant,
+        address _ecosystemToken,
+        address _tokenAddress,
+        uint256 _endTime
+    ) external {
+        address clone = Clones.clone(projectImplementationContract);
+        TaskContract(clone).initialize(
+            address(this),
+            clone,
+            _totalGrant,
+            _ecosystemToken,
+            _tokenAddress,
+            _endTime
+        );
+    }
 }
