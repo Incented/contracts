@@ -169,4 +169,12 @@ contract ProjectContract {
     function getProjectID() external view returns (uint256) {
         return projectID;
     }
+
+    function getStakersForKeys() external view returns (address[] memory) {
+        return stakersForKeys;
+    }
+
+    function getStakersAgainstKeys() external view returns (address[] memory) {
+        return stakersAgainstKeys;
+    }
 }
