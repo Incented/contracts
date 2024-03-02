@@ -19,9 +19,8 @@ contract ProjectContract {
     address[] stakersForKeys;
     address[] stakersAgainstKeys;
     bool isSelected;
-    uint256 public taskCount;
-    address public taskImplementationContract;
     mapping(uint256 => address) tasks;
+    uint256 taskCount;
 
     event TaskCreated(
         address indexed task,
@@ -169,9 +168,5 @@ contract ProjectContract {
 
     function getProjectID() external view returns (uint256) {
         return projectID;
-    }
-
-    function getTaskImplementationContract() external view returns (address) {
-        return taskImplementationContract;
     }
 }

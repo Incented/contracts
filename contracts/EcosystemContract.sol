@@ -17,6 +17,7 @@ contract EcosystemContact {
 
     using SafeERC20 for IERC20;
     uint256 totalGrant;
+    uint256 rewardPool;
 
     mapping(uint256 => address) projects;
     uint256 public projectCount;
@@ -24,9 +25,10 @@ contract EcosystemContact {
     string name;
     IERC20 _ecosystemToken = IERC20(0x466710434DBc9278887A64FD5759210167Cd26CE);
 
-    constructor(string memory _name, uint256 _totalGrant) {
+    constructor(string memory _name, uint256 _totalGrant, uint256 _rewardPool) {
         name = _name;
         totalGrant = _totalGrant;
+        rewardPool = _rewardPool;
     }
 
     function createProject(
