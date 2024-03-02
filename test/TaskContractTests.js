@@ -221,8 +221,6 @@ describe("TaskContract", function () {
             expect(prizePool).to.equal(50);
         });
         it("Should unstake and claim reward for those who voted for", async function () {
-            console.log(`TaskContract deployed to: ${taskAdd}`);
-            console.log(`MockERC20 deployed to: ${tokenAdd}`);
             await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
             await token.connect(addr1).approve(taskAdd, 1000);
             await taskContract.connect(addr1).stakeForValidation(1000, true);
@@ -244,8 +242,6 @@ describe("TaskContract", function () {
         }
         );
         it("Should unstake and claim reward for those who voted against.", async function () {
-            console.log(`TaskContract deployed to: ${taskAdd}`);
-            console.log(`MockERC20 deployed to: ${tokenAdd}`);
             await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
             await token.connect(addr1).approve(taskAdd, 1000);
             await taskContract.connect(addr1).stakeForValidation(1000, false);
@@ -272,4 +268,58 @@ describe("TaskContract", function () {
         }
         );
     });
+
+    describe("submitConribution", function () {
+        it("Should submit contribution", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            await taskContract.connect(addr5).submitConribution();
+            const contributor = await taskContract.getContributor();
+            expect(contributor).to.equal(addr5.address);
+        });
+    });
+
+    // function settle() external {
+    //     require(
+    //         task.status == TaskStatus.ValidationEnded,
+    //         "Validation is not over"
+    //     );
+    //     if (validationPhase.forWon) {
+    //         require(
+    //             task.token.transfer(validationPhase.contributor, task.reward),
+    //             "Reward transfer failed"
+    //         );
+    //     } else {
+    //         require(
+    //             task.token.transfer(task.project, task.reward),
+    //             "Reward transfer failed"
+    //         );
+    //     }
+    // }
+    describe("settle", async function () {
+        it("Should revert because validation is not over", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            expect(taskContract.settle()).to.be.revertedWith("Validation is not over");
+        });
+        it("Should send money to contributor when validation is over", async function () {
+            await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
+            await token.connect(addr1).approve(taskAdd, 1000);
+            await taskContract.connect(addr1).stakeForValidation(1000, true);
+            await token.connect(addr2).approve(taskAdd, 1000);
+            await taskContract.connect(addr2).stakeForValidation(1000, false);
+            await token.connect(addr3).approve(taskAdd, 1000);
+            await taskContract.connect(addr3).stakeForValidation(1000, true);
+            await network.provider.send("evm_increaseTime", [3800]);
+            await network.provider.send("evm_mine");
+            await taskContract.calculateWinners();
+            await taskContract.updateLosersStake();
+            await token.connect(addr1).approve(taskAdd, 1000000);
+            await taskContract.connect(addr1).unstakeAndClaim();
+            await taskContract.connect(addr2).unstakeAndClaim();
+            const bal1After = await token.balanceOf(addr1.address);
+            const bal2After = await token.balanceOf(addr2.address);
+            console.log(bal2After);
+            expect(bal1After).to.equal(100025);
+        });
+    });
 });
+
