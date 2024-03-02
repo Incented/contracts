@@ -167,10 +167,6 @@ contract TaskContract {
 
     // In this function we will also caluclate the pool prize and how it is split amongst the winners.
     function unstakeAndClaim() external {
-        require(
-            task.status != TaskStatus.ValidationEnded,
-            "Validation is not over"
-        );
         require(validationPhase.losersStakeUpdated, "Losers stake not updated");
         require(
             validationPhase.poolPrize > 0,
@@ -180,25 +176,31 @@ contract TaskContract {
         uint256 reward = 0;
 
         if (validationPhase.forWon) {
-            require(
-                validationForStakes[msg.sender] > 0,
-                "No stakes found for winner"
-            );
+            if (validationForStakes[msg.sender] > 0) {
+                reward =
+                    (validationForStakes[msg.sender] *
+                        validationPhase.poolPrize) /
+                    validationPhase.winnerTotalStake;
 
-            reward =
-                (validationForStakes[msg.sender] * validationPhase.poolPrize) /
-                validationPhase.winnerTotalStake;
-
-            reward += validationForStakes[msg.sender];
-            validationForStakes[msg.sender] = 0;
+                reward += validationForStakes[msg.sender];
+                validationForStakes[msg.sender] = 0;
+            } else {
+                reward = validationAgainstStakes[msg.sender];
+                validationAgainstStakes[msg.sender] = 0;
+            }
         } else {
-            require(
-                validationAgainstStakes[msg.sender] > 0,
-                "No stakes found for loser"
-            );
+            if (validationAgainstStakes[msg.sender] > 0) {
+                reward =
+                    (validationAgainstStakes[msg.sender] *
+                        validationPhase.poolPrize) /
+                    validationPhase.winnerTotalStake;
 
-            reward = validationAgainstStakes[msg.sender];
-            validationAgainstStakes[msg.sender] = 0;
+                reward += validationAgainstStakes[msg.sender];
+                validationAgainstStakes[msg.sender] = 0;
+            } else {
+                reward = validationForStakes[msg.sender];
+                validationForStakes[msg.sender] = 0;
+            }
         }
         require(
             task.token.transfer(msg.sender, reward),
