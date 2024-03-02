@@ -263,7 +263,6 @@ contract TaskContract {
         return validationPhase.poolPrize;
     }
 
-
     function getProject() public view returns (address) {
         return task.project;
     }
@@ -282,6 +281,7 @@ contract TaskContract {
 
     function getEndTime() public view returns (uint256) {
         return validationPhase.endTime;
+    }
 
     function getContributor() public view returns (address) {
         return validationPhase.contributor;
