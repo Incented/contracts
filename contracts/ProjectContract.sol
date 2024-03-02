@@ -22,18 +22,22 @@ contract ProjectContract {
     }
 
     function initialize(
-        address _ecosystem,
-        address _taskContract,
-        address _ecosystemToken,
-        uint256 _amount,
+        address _project,
+        uint256 _reward,
+        address _creator,
+        address _tokenAddress,
         uint256 _endTime
-    ) external {
-        require(
-            taskImplementationContract == address(0),
-            "Already initialized"
+    ) external isInitialized {
+        task = Task(
+            _project,
+            _creator,
+            _reward,
+            TaskStatus.ValidationInProgress,
+            IERC20(_tokenAddress)
         );
-        taskImplementationContract = _taskContract;
-        ecosystem = _ecosystem;
+        validationPhase.endTime = _endTime;
+
+        initialized = true;
     }
 
     function createTask(
