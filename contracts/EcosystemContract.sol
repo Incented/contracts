@@ -62,4 +62,35 @@ contract EcosystemContact {
         _ecosystemToken.safeTransferFrom(msg.sender, address(this), _amount);
         totalGrant += _amount;
     }
+
+    //Mapp through all the projcts and see which ones had the highest staking for them. The projects with the most staking will win until the grant pool is over, then the rest of the projects will be not selected. The
+    // ones that get selected will be given the grant money and the rest will be given back their staking money.
+    function calculcateWinngingProjects() external {
+        uint256 totalStaking;
+        for (uint256 i = 0; i < projectCount; i++) {
+            ProjectContract project = ProjectContract(projects[i]);
+            totalStaking += project.getTotalForStakes();
+        }
+        for (uint256 i = 0; i < projectCount; i++) {
+            ProjectContract project = ProjectContract(projects[i]);
+            if (project.getTotalForStakes() > totalStaking / 2) {
+                project.selected();
+                rewardPool -= project.getRequestedAmount();
+                _ecosystemToken.safeTransfer(
+                    address(project),
+                    project.getRequestedAmount()
+                );
+            } else {
+                address[] memory stakersForKeys = project.getStakersForKeys();
+                for (uint256 j = 0; j < stakersForKeys.length; j++) {
+                    _ecosystemToken.safeTransfer(
+                        stakersForKeys[j],
+                        project.prioritzationForStakes[
+                            project.stakersForKeys[j]
+                        ]
+                    );
+                }
+            }
+        }
+    }
 }
