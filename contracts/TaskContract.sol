@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 // Add the openzeppelin intializable contract here too
 
 contract TaskContract {
+    using SafeERC20 for IERC20;
     mapping(address staker => uint256 ammount) validationForStakes;
     mapping(address staker => uint256 ammount) validationAgainstStakes;
 
@@ -49,6 +50,7 @@ contract TaskContract {
     event TaskValidation(address contributor, bool validated, uint256 amount);
     event TaskContribution(address contributor);
     event TaskSettled(address contributor, uint256 amount);
+    event TaskUnstake(address staker, uint256 amount);
 
     constructor(
         address _project,
@@ -74,6 +76,7 @@ contract TaskContract {
     }
 
     // Staking for validation
+    // This should probably check for if a person wants to stake more than 1 in a task.
     function stakeForValidation(uint256 amount, bool validate) external {
         require(
             block.timestamp >= validationPhase.endTime,
@@ -81,10 +84,6 @@ contract TaskContract {
         );
         require(amount > 0, "Amount must be greater than 0");
         require(task.token.approve(address(this), amount), "Approval failed");
-        require(
-            task.token.transferFrom(msg.sender, address(this), amount),
-            "Transfer failed"
-        );
 
         if (validate) {
             validationForStakes[msg.sender] += amount;
@@ -99,6 +98,8 @@ contract TaskContract {
 
             emit TaskValidation(msg.sender, false, amount);
         }
+
+        task.token.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function calculateWinners() public {
@@ -197,10 +198,9 @@ contract TaskContract {
                 validationForStakes[msg.sender] = 0;
             }
         }
-        require(
-            task.token.transfer(msg.sender, reward),
-            "Reward transfer failed"
-        );
+
+        task.token.safeTransfer(msg.sender, reward);
+        emit TaskUnstake(msg.sender, reward);
     }
 
     // this needs logic to settle the funds. There are two outcomes. the contribuitor gets the funds or the task is not completed
@@ -211,16 +211,12 @@ contract TaskContract {
             "Validation is not over"
         );
         if (validationPhase.forWon) {
-            require(
-                task.token.transfer(validationPhase.contributor, task.reward),
-                "Reward transfer failed"
-            );
+            task.token.safeTransfer(validationPhase.contributor, task.reward);
         } else {
-            require(
-                task.token.transfer(task.project, task.reward),
-                "Reward transfer failed"
-            );
+            task.token.safeTransfer(task.project, task.reward);
         }
+        task.status = TaskStatus.Settled;
+        emit TaskSettled(validationPhase.contributor, task.reward);
     }
 
     function getStakeFor(address staker) public view returns (uint256) {
