@@ -65,6 +65,9 @@ contract EcosystemContact {
 
     //Mapp through all the projcts and see which ones had the highest staking for them. The projects with the most staking will win until the grant pool is over, then the rest of the projects will be not selected. The
     // ones that get selected will be given the grant money and the rest will be given back their staking money.
+
+    // This function is still in the works. Need to figure out some more on the prioritization stage.
+
     function calculcateWinngingProjects() external {
         uint256 totalStaking;
         for (uint256 i = 0; i < projectCount; i++) {
