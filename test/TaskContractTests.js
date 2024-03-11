@@ -277,24 +277,6 @@ describe("TaskContract", function () {
             expect(contributor).to.equal(addr5.address);
         });
     });
-
-    // function settle() external {
-    //     require(
-    //         task.status == TaskStatus.ValidationEnded,
-    //         "Validation is not over"
-    //     );
-    //     if (validationPhase.forWon) {
-    //         require(
-    //             task.token.transfer(validationPhase.contributor, task.reward),
-    //             "Reward transfer failed"
-    //         );
-    //     } else {
-    //         require(
-    //             task.token.transfer(task.project, task.reward),
-    //             "Reward transfer failed"
-    //         );
-    //     }
-    // }
     describe("settle", async function () {
         it("Should revert because validation is not over", async function () {
             await taskContract.initialize(owner.address, 10000, addr1.address, tokenAdd, 3600);
